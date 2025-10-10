@@ -19,9 +19,9 @@ Abstract
    nature, [RFC4271] defines the next-hop attribute which purpose is to
    carry the address of the next router to send the IP packet to.  In
    BGP, the next-hop may not be a directly connected router, hence, when
-   evaluating paths, BGP needs to figure if the next-hop is resolvable
-   and, when needed, needs to figure out what is the internal cost to
-   reach this next-hop.
+   evaluating paths, BGP needs to figure out if the next-hop is
+   resolvable and, when needed, needs to figure out what is the internal
+   cost to reach this next-hop.
 
    The incremental use of tunneling technologies to carry traffic
    between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6…) may violate the
@@ -127,7 +127,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    [RFC4271] Section 9.1.2.1 defines the route resolvability condition:
    a BGP route is considered unresolvable if the BGP speaker’s routing
    table has no route matching the BGP route next-hop address.  As per
-   [RFC4271] Section 9.1.2.2 e) , when comparing paths received via
+   [RFC4271] Section 9.1.2.2 e), when comparing paths received via
    internal BGP (IBGP), the Routing Table metric associated to the BGP
    route next-hop address is used to figure out the best path.
 
@@ -338,25 +338,25 @@ Vroonen & Litkowski       Expires 13 April 2026                 [Page 6]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
-              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
-              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
-
    [RFC4271]  Rekhter, Y., Ed., Li, T., Ed., and S. Hares, Ed., "A
               Border Gateway Protocol 4 (BGP-4)", RFC 4271,
               DOI 10.17487/RFC4271, January 2006,
               <https://www.rfc-editor.org/info/rfc4271>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+   [RFC9012]  Patel, K., Van de Velde, G., Sangli, S., and J. Scudder,
+              "The BGP Tunnel Encapsulation Attribute", RFC 9012,
+              DOI 10.17487/RFC9012, April 2021,
+              <https://www.rfc-editor.org/info/rfc9012>.
 
    [RFC9252]  Dawra, G., Ed., Talaulikar, K., Ed., Raszuk, R., Decraene,
               B., Zhuang, S., and J. Rabadan, "BGP Overlay Services
               Based on Segment Routing over IPv6 (SRv6)", RFC 9252,
               DOI 10.17487/RFC9252, July 2022,
               <https://www.rfc-editor.org/info/rfc9252>.
-
-   [RFC9012]  Patel, K., Van de Velde, G., Sangli, S., and J. Scudder,
-              "The BGP Tunnel Encapsulation Attribute", RFC 9012,
-              DOI 10.17487/RFC9012, April 2021,
-              <https://www.rfc-editor.org/info/rfc9012>.
 
 8.2.  Informative References
 
