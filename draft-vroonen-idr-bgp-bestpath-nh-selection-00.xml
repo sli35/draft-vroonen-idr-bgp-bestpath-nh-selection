@@ -48,11 +48,11 @@
     <abstract>
       <t>
       BGP [RFC4271] has originally been designed to carry IPv4 routing information over the Internet. 
-      IP routing being “hop-by-hop” in nature, [RFC4271] defines the next-hop attribute which purpose is to carry the address of the next router to send the IP packet to. 
+      IP routing being “hop-by-hop” in nature, [RFC4271] defines the NEXT_HOP attribute which purpose is to carry the address of the next router to send the IP packet to. 
       In BGP, the next-hop may not be a directly connected router, hence, when evaluating paths, BGP needs to figure out if the next-hop is resolvable and, when needed, needs to figure out what is the internal cost to reach this next-hop. 
       </t>
       <t>
-      The incremental use of tunneling technologies to carry traffic between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6…) may violate the assumption that the address carried in the next-hop attribute is representative of the actual forwarding next-hop.
+      The incremental use of tunneling technologies to carry traffic between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6…) may violate the assumption that the address carried in the NEXT_HOP attribute is representative of the actual forwarding next-hop.
       These technologies decouple the BGP control-plane's view of the next-hop from the data-plane's actual forwarding endpoint.
       This document describes the problems that arise from this decoupling.
       These problems include sub-optimal path selection, incorrect resolvability tracking of the forwarding path leading to traffic blackholing, and others.
@@ -78,7 +78,7 @@
         <name>Introduction</name>
         <t>
         BGP <xref target="RFC4271"/> is designed to exchange network reachability information between routing domains. 
-        A BGP update typically contains a prefix and a set of path attributes, including the well-known mandatory next-hop attribute. 
+        A BGP update typically contains a prefix and a set of path attributes, including the well-known mandatory NEXT_HOP attribute. 
         The receiving router uses this next-hop address to determine the egress point for traffic destined for the advertised prefix. 
         The assumption is the next hop address represents the next router from a traffic forwarding point of view.
         </t>
@@ -95,7 +95,7 @@
           figure text...
         </t>
         <t>
-        This document describes cases where the next-hop attribute used in the BGP update is not representative of the actual forwarding path. 
+        This document describes cases where the NEXT_HOP attribute used in the BGP update is not representative of the actual forwarding path. 
         In these cases, the resolvability condition may fail in its goal and path selection may be done on inaccurate criteria leading to suboptimal routing, network congestion, traffic blackholing...
         </t>
         <t>
@@ -110,7 +110,7 @@
             <xref target="RFC9012"/> Section 7 improves the route resolvability condition by verifying that there is a feasible tunnel. However, it doesn’t take into account that the cost associated with the tunnel may be different from the cost associated with the BGP next-hop.
             </li>
             <li>
-            <xref target="RFC9252"/> defines SRv6 overlay services signaling using BGP. The procedures involve the advertisement of an SRv6 Service TLV within the BGP Prefix SID attribute to signal the SID to be used for forwarding. RFC9252 highlights that ingress PE must perform a resolvability check for the SRv6 SID in addition to the resolvability check done on the next-hop attribute. However, it doesn’t take into account that the cost associated with the tunnel may be different from the cost associated with the BGP next-hop.
+            <xref target="RFC9252"/> defines SRv6 overlay services signaling using BGP. The procedures involve the advertisement of an SRv6 Service TLV within the BGP Prefix SID attribute to signal the SID to be used for forwarding. RFC9252 highlights that ingress PE must perform a resolvability check for the SRv6 SID in addition to the resolvability check done on the NEXT_HOP attribute. However, it doesn’t take into account that the cost associated with the tunnel may be different from the cost associated with the BGP next-hop.
             </li>
         </ul>
         <t>
@@ -224,7 +224,7 @@
       <name>Security Considerations</name>
       <t>
       This document modifies BGP route selection process by using data other than the next-hop address to perform the resolvability check as well as to compute the internal cost. 
-      This does not add any security consideration compared to using the existing next-hop attribute defined in <xref target="RFC4271"/>.
+      This does not add any security consideration compared to using the existing NEXT_HOP attribute defined in <xref target="RFC4271"/>.
       </t>
     </section>
     

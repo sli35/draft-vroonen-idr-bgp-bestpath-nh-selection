@@ -16,7 +16,7 @@ Abstract
 
    BGP [RFC4271] has originally been designed to carry IPv4 routing
    information over the Internet.  IP routing being “hop-by-hop” in
-   nature, [RFC4271] defines the next-hop attribute which purpose is to
+   nature, [RFC4271] defines the NEXT_HOP attribute which purpose is to
    carry the address of the next router to send the IP packet to.  In
    BGP, the next-hop may not be a directly connected router, hence, when
    evaluating paths, BGP needs to figure out if the next-hop is
@@ -25,7 +25,7 @@ Abstract
 
    The incremental use of tunneling technologies to carry traffic
    between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6…) may violate the
-   assumption that the address carried in the next-hop attribute is
+   assumption that the address carried in the NEXT_HOP attribute is
    representative of the actual forwarding next-hop.  These technologies
    decouple the BGP control-plane's view of the next-hop from the data-
    plane's actual forwarding endpoint.  This document describes the
@@ -119,7 +119,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    BGP [RFC4271] is designed to exchange network reachability
    information between routing domains.  A BGP update typically contains
    a prefix and a set of path attributes, including the well-known
-   mandatory next-hop attribute.  The receiving router uses this next-
+   mandatory NEXT_HOP attribute.  The receiving router uses this next-
    hop address to determine the egress point for traffic destined for
    the advertised prefix.  The assumption is the next hop address
    represents the next router from a traffic forwarding point of view.
@@ -137,7 +137,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    figure text...
 
-   This document describes cases where the next-hop attribute used in
+   This document describes cases where the NEXT_HOP attribute used in
    the BGP update is not representative of the actual forwarding path.
    In these cases, the resolvability condition may fail in its goal and
    path selection may be done on inaccurate criteria leading to
@@ -170,7 +170,7 @@ Vroonen & Litkowski       Expires 13 April 2026                 [Page 3]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-      resolvability check done on the next-hop attribute.  However, it
+      resolvability check done on the NEXT_HOP attribute.  However, it
       doesn’t take into account that the cost associated with the tunnel
       may be different from the cost associated with the BGP next-hop.
 
@@ -316,7 +316,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    This document modifies BGP route selection process by using data
    other than the next-hop address to perform the resolvability check as
    well as to compute the internal cost.  This does not add any security
-   consideration compared to using the existing next-hop attribute
+   consideration compared to using the existing NEXT_HOP attribute
    defined in [RFC4271].
 
 8.  References
