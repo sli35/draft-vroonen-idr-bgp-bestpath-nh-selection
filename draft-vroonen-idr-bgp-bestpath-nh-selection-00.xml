@@ -124,6 +124,44 @@
       <section title="Segment Routing Traffic Engineering policy">
       </section>
       <section title="SRv6 services">
+        <t>
+        When using SRv6 services as defined in <xref target="RFC9252"/>, the BGP NEXT_HOP attribute may not be representative of the actual forwarding path.
+        </t>
+        <figure>
+          <name>SRv6 service example</name>
+          <artwork><![CDATA[
+                +-----+     +----+
+                | PE1 |-----| P1 |-----+
+                +-----+     +----+     |
+                       \   /           |
+                        \ /         +-----+
+                         X          | PE3 |
+                        / \         +-----+
+                       /   \           |
+                +-----+     +----+     |
+                | PE2 |-----| P2 |-----+
+                +-----+     +----+
+          ]]>
+          </artwork>
+        </figure>
+        <t>
+        In the above figure, PE1, PE2 and PE3 are Provider Edge routers, P1 and P2 are Provider routers. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP L1, L2 and SRv6 SID S1 and S2.
+        </t>
+        <ul>
+            <li>PE3's routing table resolves L1 via P1 path (high bandwidth path) and S1 via P2 path (low latency path).</li>
+            <li>PE3's routing table resolves L2 via P1 path (high bandwidth path) and S2 via P2 path (low latency path).</li>
+        </ul>
+        <t>
+        Based on [RFC4271] procedures, PE3 will select the path with the lowest cost to the NEXT_HOP address.
+        If the cost to L1 is lower than the cost to L2, PE3 will select the path received from PE1.
+        </t>
+        <t>
+        Two problems may arise:
+        </t>
+        <ul>
+            <li>PE3 will not try to resolve S1, which may lead to traffic blackholing if the path to S1 is not reachable.</li>
+            <li>PE3 may not select the best path with the lowest latency to reach P/m as it will only consider the cost to the NEXT_HOP address.</li>
+        </ul>
       </section>
       <section title="MPLS path">
       </section>
