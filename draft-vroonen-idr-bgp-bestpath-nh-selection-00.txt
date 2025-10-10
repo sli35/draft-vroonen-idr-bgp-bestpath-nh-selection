@@ -1,0 +1,392 @@
+
+
+
+
+Interdomain Working Group                                O. Vroonen, Ed.
+Internet-Draft                                              S. Litkowski
+Updates: 4271 (if approved)                                        Cisco
+Intended status: Standards Track                         10 October 2025
+Expires: 13 April 2026
+
+
+             BGP best path next-hop selection enhancements
+             draft-vroonen-idr-bgp-bestpath-nh-selection-00
+
+Abstract
+
+   BGP [RFC4271] has originally been designed to carry IPv4 routing
+   information over the Internet.  IP routing being “hop-by-hop” in
+   nature, [RFC4271] defines the next-hop attribute which purpose is to
+   carry the address of the next router to send the IP packet to.  In
+   BGP, the next-hop may not be a directly connected router, hence, when
+   evaluating paths, BGP needs to figure if the next-hop is resolvable
+   and, when needed, needs to figure out what is the internal cost to
+   reach this next-hop.
+
+   The incremental use of tunneling technologies to carry traffic
+   between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6…) may violate the
+   assumption that the address carried in the next-hop attribute is
+   representative of the actual forwarding next-hop.  These technologies
+   decouple the BGP control-plane's view of the next-hop from the data-
+   plane's actual forwarding endpoint.  This document describes the
+   problems that arise from this decoupling.  These problems include
+   sub-optimal path selection, incorrect resolvability tracking of the
+   forwarding path leading to traffic blackholing, and others.  This
+   document proposes some modification of BGP path selection procedures
+   to accommodate these use cases.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 1]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+   This Internet-Draft will expire on 13 April 2026.
+
+Copyright Notice
+
+   Copyright (c) 2025 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Requirements Language . . . . . . . . . . . . . . . . . . . .   2
+   2.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
+   3.  Use cases . . . . . . . . . . . . . . . . . . . . . . . . . .   4
+     3.1.  Tunnel encapsulation attribute  . . . . . . . . . . . . .   4
+     3.2.  Segment Routing Traffic Engineering policy  . . . . . . .   4
+     3.3.  SRv6 services . . . . . . . . . . . . . . . . . . . . . .   4
+   4.  Modification of the BGP route selection process . . . . . . .   4
+     4.1.  Forwarding address  . . . . . . . . . . . . . . . . . . .   4
+     4.2.  Lookup table  . . . . . . . . . . . . . . . . . . . . . .   5
+     4.3.  Route resolvability condition . . . . . . . . . . . . . .   5
+     4.4.  Internal cost determination . . . . . . . . . . . . . . .   5
+   5.  Examples  . . . . . . . . . . . . . . . . . . . . . . . . . .   6
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   6
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .   6
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   6
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   6
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .   7
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .   7
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   7
+
+1.  Requirements Language
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 2]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+2.  Introduction
+
+   BGP [RFC4271] is designed to exchange network reachability
+   information between routing domains.  A BGP update typically contains
+   a prefix and a set of path attributes, including the well-known
+   mandatory next-hop attribute.  The receiving router uses this next-
+   hop address to determine the egress point for traffic destined for
+   the advertised prefix.  The assumption is the next hop address
+   represents the next router from a traffic forwarding point of view.
+
+   [RFC4271] Section 9.1.2.1 defines the route resolvability condition:
+   a BGP route is considered unresolvable if the BGP speaker’s routing
+   table has no route matching the BGP route next-hop address.  As per
+   [RFC4271] Section 9.1.2.2 e) , when comparing paths received via
+   internal BGP (IBGP), the Routing Table metric associated to the BGP
+   route next-hop address is used to figure out the best path.
+
+               FIGURE TO ADD
+
+                                  Figure 1
+
+   This document describes cases where the next-hop attribute used in
+   the BGP update is not representative of the actual forwarding path.
+   In these cases, the resolvability condition may fail in its goal and
+   path selection may be done on inaccurate criteria leading to
+   suboptimal routing, network congestion, traffic blackholing...
+
+   These use cases are not new and may have been partially addressed by
+   IETF standards or drafts, some references are provided below:
+
+   *  [I-D.ietf-idr-bgp-bestpath-selection-criteria] addresses the case
+      of MPLS networks and proposes a modification of the route
+      resolvability condition to be performed using forwarding database
+      of a particular data plane protocol.  It also proposes an optional
+      data path verification.
+
+   *  [RFC9012] Section 7 improves the route resolvability condition by
+      verifying that there is a feasible tunnel.  However, it doesn’t
+      take into account that the cost associated with the tunnel may be
+      different from the cost associated with the BGP next-hop.
+
+
+
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 3]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+   *  [RFC9252] defines SRv6 overlay services signaling using BGP.  The
+      procedures involve the advertisement of an SRv6 Service TLV within
+      the BGP Prefix SID attribute to signal the SID to be used for
+      forwarding.  RFC9252 highlights that ingress PE must perform a
+      resolvability check for the SRv6 SID in addition to the
+      resolvability check done on the next-hop attribute.  However, it
+      doesn’t take into account that the cost associated with the tunnel
+      may be different from the cost associated with the BGP next-hop.
+
+   This document defines generic modifications to the BGP decision
+   process that can apply to all the use cases.
+
+3.  Use cases
+
+3.1.  Tunnel encapsulation attribute
+
+3.2.  Segment Routing Traffic Engineering policy
+
+3.3.  SRv6 services
+
+4.  Modification of the BGP route selection process
+
+4.1.  Forwarding address
+
+   This document defines the forwarding address as the IP address of the
+   next hop that will be used to forward packets.  The forwarding
+   address may come from the NEXT_HOP or a different address which has
+   been signaled in a different attribute along with the path.
+
+   The following data already defined in BGP standards SHOULD be
+   considered as forwarding addresses:
+
+   *  The Tunnel Egress Endpoint Sub-TLV contained in Tunnel
+      Encapsulation attribute defined in [RFC9012]
+
+   *  SRv6 SID Information Sub-TLV contained within L3 or L2 SRv6 SID
+      defined in [RFC9252]
+
+   Unless a BGP update contains another type of forwarding address, the
+   BGP NEXT_HOP attribute is considered as the forwarding address.
+
+   A forwarding address MAY be accompanied by additional data (we call
+   it forwarding context) that characterizes more the forwarding path to
+   be used.  As an example, [RFC9012] defines encapsulation sub-TLVs:
+   the information contained in these TLVs can be used as additional
+   context to the forwarding address.  When [RFC9252] is used, it is
+   easy to assume that the forwarding context is SRv6 forwarding.
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 4]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+   Each new BGP extension SHOULD specify if an address carried by the
+   extension must be considered as a forwarding address.  The procedures
+   defined in the next section SHOULD apply for any new forwarding
+   address defined without having to redefine them.
+
+4.2.  Lookup table
+
+   When the forwarding address and its context are identified for a BGP
+   route, the implementation must figure out the internal table in which
+   to perform the address look up.  Each implementation has its own set
+   of tables (e.g.: IP routing table, Ingress MPLS tunnel table, …), so
+   each implementation figures out the proper internal table to use
+   based on the forwarding address and the context.
+
+4.3.  Route resolvability condition
+
+   This document updates [RFC4271] Section 9.1.2.1 as follows:
+
+   *  The route resolvability check for the BGP NEXT_HOP attribute MUST
+      continue to be done.
+
+   *  In addition, the route resolvability criteria SHOULD be performed
+      based on the forwarding address.
+
+   *  When resolving the forwarding address, look up SHOULD be performed
+      in the table identified from the forwarding address and context.
+
+4.4.  Internal cost determination
+
+   For a prefix P/m, different BGP paths may use different forwarding
+   addresses and contexts of various types.
+
+           P/m
+               Path1: NH=R1 Color: 200
+               Path2: NH=R2 SRv6-SID: R2_SID
+               Path3: NH=R3 Tunnel-encap(L2TPv3, endpoint: R3)
+
+                                  Figure 2
+
+   Costs retrieved from different types of forwarding addresses or
+   contexts may not be comparable because they are based on different
+   sets of rules.  For instance, path1 may leverage an SR-TE policy
+   (color 200, endpoint R1) optimizing for latency, so the cost of path1
+   will reflect the latency to R1.  Path2 may use the IGP cost to R2.
+   Path3 may have no cost.  These values are not directly comparable.
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 5]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+   In order to compare the paths, this document introduces the concept
+   of forwarding address preference.  The preference value may come from
+   the table lookup, or BGP local configuration may override it (for
+   example, SR policies with color 200 may have the highest preference,
+   while L2TP tunnels may have the lowest preference).
+
+   This document updates [RFC4271] Section 9.1.2.2 e) as follows:
+
+   *  Remove from consideration any routes with less forwarding address
+      preference.  The forwarding preference of a path is determined by
+      either retrieval from the appropriate table identified in
+      Section 4.2 or by local BGP configuration.
+
+   *  For remaining paths, the interior cost of a route is determined by
+      retrieving the metric to the forwarding address for the route from
+      the appropriate table identified in Section 4.2.  If the
+      forwarding address for a route is reachable, but no cost can be
+      determined, the cost SHOULD be set by default to the maximum
+      allowed cost.
+
+   Using forwarding preference and forwarding address-based cost SHOULD
+   be enabled through a configuration knob.
+
+5.  Examples
+
+6.  IANA Considerations
+
+   This document does not require any IANA actions.
+
+7.  Security Considerations
+
+   This document modifies BGP route selection process by using data
+   other than the next-hop address to perform the resolvability check as
+   well as to compute the internal cost.  This does not add any security
+   consideration compared to using the existing next-hop attribute
+   defined in [RFC4271].
+
+8.  References
+
+8.1.  Normative References
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 6]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+   [RFC4271]  Rekhter, Y., Ed., Li, T., Ed., and S. Hares, Ed., "A
+              Border Gateway Protocol 4 (BGP-4)", RFC 4271,
+              DOI 10.17487/RFC4271, January 2006,
+              <https://www.rfc-editor.org/info/rfc4271>.
+
+   [RFC9252]  Dawra, G., Ed., Talaulikar, K., Ed., Raszuk, R., Decraene,
+              B., Zhuang, S., and J. Rabadan, "BGP Overlay Services
+              Based on Segment Routing over IPv6 (SRv6)", RFC 9252,
+              DOI 10.17487/RFC9252, July 2022,
+              <https://www.rfc-editor.org/info/rfc9252>.
+
+   [RFC9012]  Patel, K., Van de Velde, G., Sangli, S., and J. Scudder,
+              "The BGP Tunnel Encapsulation Attribute", RFC 9012,
+              DOI 10.17487/RFC9012, April 2021,
+              <https://www.rfc-editor.org/info/rfc9012>.
+
+8.2.  Informative References
+
+   [I-D.ietf-idr-bgp-bestpath-selection-criteria]
+              Asati, R., "BGP Bestpath Selection Criteria Enhancement",
+              Work in Progress, Internet-Draft, draft-ietf-idr-bgp-
+              bestpath-selection-criteria-12, 5 June 2019,
+              <https://datatracker.ietf.org/doc/html/draft-ietf-idr-bgp-
+              bestpath-selection-criteria-12>.
+
+Acknowledgements
+
+
+Authors' Addresses
+
+   Olivier Vroonen (editor)
+   Cisco
+   Email: ovroonen@cisco.com
+
+
+   Stephane Litkowski
+   Cisco
+   Email: slitkows@cisco.com
+
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 7]
