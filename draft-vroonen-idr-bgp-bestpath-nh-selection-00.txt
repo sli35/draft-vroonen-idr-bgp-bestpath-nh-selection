@@ -88,14 +88,14 @@ Table of Contents
      4.2.  Lookup table  . . . . . . . . . . . . . . . . . . . . . .   5
      4.3.  Route resolvability condition . . . . . . . . . . . . . .   5
      4.4.  Internal cost determination . . . . . . . . . . . . . . .   5
-   5.  Examples  . . . . . . . . . . . . . . . . . . . . . . . . . .   6
-   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   6
-   7.  Security Considerations . . . . . . . . . . . . . . . . . . .   6
-   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   6
-     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   6
-     8.2.  Informative References  . . . . . . . . . . . . . . . . .   7
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .   7
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   7
+   5.  Examples  . . . . . . . . . . . . . . . . . . . . . . . . . .   8
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   8
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   8
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   8
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .   9
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .   9
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .   9
 
 1.  Requirements Language
 
@@ -258,12 +258,13 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    For a prefix P/m, different BGP paths may use different forwarding
    addresses and contexts of various types.
 
-           P/m
-               Path1: NH=R1 Color: 200
-               Path2: NH=R2 SRv6-SID: R2_SID
-               Path3: NH=R3 Tunnel-encap(L2TPv3, endpoint: R3)
+         P/m
+             Path1: NH=10.0.0.1 Color: 200
+             Path2: NH=2001::2 SRv6-SID: cafe:0:2:e002::
+             Path3: NH=10.0.0.3 Tunnel-encap(L2TPv3, endpoint: 10.0.0.3)
+             Path4: NH=2001::4 SRv6-SID: cafe:0:4:e002::
 
-                                  Figure 2
+                                Figure 2
 
    Costs retrieved from different types of forwarding addresses or
    contexts may not be comparable because they are based on different
@@ -276,7 +277,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-
 Vroonen & Litkowski       Expires 13 April 2026                 [Page 5]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
@@ -284,9 +284,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    In order to compare the paths, this document introduces the concept
    of forwarding address preference.  The preference value may come from
-   the table lookup, or BGP local configuration may override it (for
-   example, SR policies with color 200 may have the highest preference,
-   while L2TP tunnels may have the lowest preference).
+   the table lookup, or BGP local configuration may override it.  The
+   preference being a local value, an implementation MAY choose the
+   lowest value or the highest value as preferred.
 
    This document updates [RFC4271] Section 9.1.2.2 e) as follows:
 
@@ -304,6 +304,111 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    Using forwarding preference and forwarding address-based cost SHOULD
    be enabled through a configuration knob.
+
+   With the example above and the internal tables defined below, and
+   considering highest preference value as the most preferred one, BGP
+   would select Path2 as best.  Path2 and Path4 have the highest
+   preference (100), then Path2 has the lowest internal cost (12).
+
+         P/m
+             Path1: NH=10.0.0.1 Color: 200,
+                    preference 10 (from table), cost 1001
+             Path2: NH=2001::2 SRv6-SID: cafe:0:2:e002::,
+                    preference 100 (from BGP), cost 12
+             Path3: NH=10.0.0.3
+                    Tunnel-encap(L2TPv3, endpoint: 10.0.0.3, sessID: 1),
+                    preference 1 (from BGP), cost max
+             Path4: NH=2001::4 SRv6-SID: cafe:0:4:e002::,
+                    preference 100 (from BGP), cost 14
+
+                                Figure 3
+
+
+
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 6]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+     +===============+============+========+========================+
+     | Prefix, Color | Preference | Metric | Forwarding data        |
+     +===============+============+========+========================+
+     | 10.0.0.1, 200 | 10         | 1001   | interface IF1, label   |
+     |               |            |        | stack {L1, L2, L3}     |
+     +===============+============+========+========================+
+     | 10.0.0.2, 200 | 10         | 1002   | interface IF2, label   |
+     |               |            |        | stack {L4, L5}         |
+     +===============+============+========+========================+
+     | 10.0.0.3, 200 | 10         | 1003   | interface IF1, label   |
+     |               |            |        | stack {L6, L7, L8, L9} |
+     +===============+============+========+========================+
+
+                    Table 1: IPv4 Color routing table
+
+     +===============+============+========+========================+
+     | Prefix        | Preference | Metric | Forwarding data        |
+     +===============+============+========+========================+
+     | cafe:0:1::/48 | 5          | 11     | interface IF1, label   |
+     |               |            |        | stack {L1, L2, L3}     |
+     +===============+============+========+========================+
+     | cafe:0:2::/48 | 5          | 12     | interface IF2, label   |
+     |               |            |        | stack {L4, L5}         |
+     +===============+============+========+========================+
+     | cafe:0:3::/48 | 5          | 13     | interface IF1, label   |
+     |               |            |        | stack {L6, L7, L8, L9} |
+     +===============+============+========+========================+
+     | cafe:0:4::/48 | 5          | 14     | interface IF1, label   |
+     |               |            |        | stack {L10, L11, L12}  |
+     +===============+============+========+========================+
+
+                       Table 2: IPv6 routing table
+
+                   +=============+============+========+
+                   | Destination | Session ID | Status |
+                   +=============+============+========+
+                   | 10.0.0.3    | 1          | up     |
+                   +=============+============+========+
+
+                        Table 3: L2TP session table
+
+
+
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 7]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
+      +==========================+==================================+
+      | Type                     | Preference                       |
+      +==========================+==================================+
+      | MPLS LSP (any signaling) | 10                               |
+      +==========================+==================================+
+      | MPLS RSVP-TE LSP         | 50                               |
+      +==========================+==================================+
+      | SRv6 SID                 | 100                              |
+      +==========================+==================================+
+      | Default                  | use value from table lookup, use |
+      |                          | 1 if table provided no value     |
+      +==========================+==================================+
+
+          Table 4: BGP forwarding address preference configuration
+
 
 5.  Examples
 
@@ -328,16 +433,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-
-
-
-
-
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 6]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
    [RFC4271]  Rekhter, Y., Ed., Li, T., Ed., and S. Hares, Ed., "A
               Border Gateway Protocol 4 (BGP-4)", RFC 4271,
               DOI 10.17487/RFC4271, January 2006,
@@ -346,6 +441,14 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 8]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
    [RFC9012]  Patel, K., Van de Velde, G., Sangli, S., and J. Scudder,
               "The BGP Tunnel Encapsulation Attribute", RFC 9012,
@@ -389,4 +492,13 @@ Authors' Addresses
 
 
 
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 7]
+
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 13 April 2026                 [Page 9]

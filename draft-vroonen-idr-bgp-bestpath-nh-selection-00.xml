@@ -183,16 +183,17 @@
         <figure>
             <artwork><![CDATA[
         P/m
-            Path1: NH=R1 Color: 200
-            Path2: NH=R2 SRv6-SID: R2_SID
-            Path3: NH=R3 Tunnel-encap(L2TPv3, endpoint: R3)
+            Path1: NH=10.0.0.1 Color: 200
+            Path2: NH=2001::2 SRv6-SID: cafe:0:2:e002::
+            Path3: NH=10.0.0.3 Tunnel-encap(L2TPv3, endpoint: 10.0.0.3)
+            Path4: NH=2001::4 SRv6-SID: cafe:0:4:e002::
             ]]></artwork>
         </figure>
         <t>
         Costs retrieved from different types of forwarding addresses or contexts may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR-TE policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
         </t>
         <t>
-        In order to compare the paths, this document introduces the concept of forwarding address preference. The preference value may come from the table lookup, or BGP local configuration may override it (for example, SR policies with color 200 may have the highest preference, while L2TP tunnels may have the lowest preference).
+        In order to compare the paths, this document introduces the concept of forwarding address preference. The preference value may come from the table lookup, or BGP local configuration may override it. The preference being a local value, an implementation MAY choose the lowest value or the highest value as preferred.
         </t>
         <t>
         This document updates <xref target="RFC4271"/> Section 9.1.2.2 e) as follows:
@@ -208,7 +209,71 @@
         <t>
         Using forwarding preference and forwarding address-based cost SHOULD be enabled through a configuration knob.
         </t>
+        <t>
+        With the example above and the internal tables defined below, and considering highest preference value as the most preferred one, BGP would select Path2 as best. Path2 and Path4 have the highest preference (100), then Path2 has the lowest internal cost (12).
 
+        </t>
+        <figure>
+            <artwork><![CDATA[
+        P/m
+            Path1: NH=10.0.0.1 Color: 200, 
+                   preference 10 (from table), cost 1001
+            Path2: NH=2001::2 SRv6-SID: cafe:0:2:e002::,  
+                   preference 100 (from BGP), cost 12
+            Path3: NH=10.0.0.3 
+                   Tunnel-encap(L2TPv3, endpoint: 10.0.0.3, sessID: 1),
+                   preference 1 (from BGP), cost max
+            Path4: NH=2001::4 SRv6-SID: cafe:0:4:e002::, 
+                   preference 100 (from BGP), cost 14
+            ]]></artwork>
+        </figure>
+        <table>
+          <name>IPv4 Color routing table</name>
+          <thead>
+            <tr><th>Prefix, Color</th><th>Preference</th><th>Metric</th><th>Forwarding data</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>10.0.0.1, 200</th><th>10</th><th>1001</th><th>interface IF1, label stack {L1, L2, L3}</th></tr>
+            <tr><th>10.0.0.2, 200</th><th>10</th><th>1002</th><th>interface IF2, label stack {L4, L5}</th></tr>
+            <tr><th>10.0.0.3, 200</th><th>10</th><th>1003</th><th>interface IF1, label stack {L6, L7, L8, L9}</th></tr>
+          </tbody>
+        </table>
+        <table>
+          <name>IPv6 routing table</name>
+          <thead>
+            <tr><th>Prefix</th><th>Preference</th><th>Metric</th><th>Forwarding data</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>cafe:0:1::/48</th><th>5</th><th>11</th><th>interface IF1, label stack {L1, L2, L3}</th></tr>
+            <tr><th>cafe:0:2::/48</th><th>5</th><th>12</th><th>interface IF2, label stack {L4, L5}</th></tr>
+            <tr><th>cafe:0:3::/48</th><th>5</th><th>13</th><th>interface IF1, label stack {L6, L7, L8, L9}</th></tr>
+            <tr><th>cafe:0:4::/48</th><th>5</th><th>14</th><th>interface IF1, label stack {L10, L11, L12}</th></tr>
+          </tbody>
+        </table>
+        <table>
+          <name>L2TP session table</name>
+          <thead>
+            <tr><th>Destination</th><th>Session ID</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>10.0.0.3</th><th>1</th><th>up</th></tr>
+          </tbody>
+        </table>
+        <table>
+          <name>BGP forwarding address preference configuration</name>
+          <thead>
+            <tr><th>Type</th><th>Preference</th></tr>
+          </thead>
+          <tbody>
+            <tr><th>MPLS LSP (any signaling)</th><th>10</th></tr>
+            <tr><th>MPLS RSVP-TE LSP</th><th>50</th></tr>
+            <tr><th>SRv6 SID</th><th>100</th></tr>
+            <tr><th>Default</th><th>use value from table lookup, use 1 if table provided no value</th></tr>
+          </tbody>
+        </table>
+        <t>
+
+        </t>
         </section>
     </section>
 
