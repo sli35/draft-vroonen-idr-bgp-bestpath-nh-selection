@@ -130,37 +130,46 @@
         <figure>
           <name>SRv6 service example</name>
           <artwork><![CDATA[
-                +-----+     +----+
+                +-----+ (1) +----+  (1)
                 | PE1 |-----| P1 |-----+
-                +-----+     +----+     |
+                +-----+ [5] +----+  [5]|
                        \   /           |
-                        \ /         +-----+
+                    (5) \ / (1)     +-----+
                          X          | PE3 |
-                        / \         +-----+
+                    [1] / \ [5]     +-----+
                        /   \           |
-                +-----+     +----+     |
+                +-----+ [2] +----+  [1]|
                 | PE2 |-----| P2 |-----+
-                +-----+     +----+
+                +-----+ (6) +----+  (5)
           ]]>
           </artwork>
         </figure>
         <t>
-        In the above figure, PE1, PE2 and PE3 are Provider Edge routers, P1 and P2 are Provider routers. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP L1, L2 and SRv6 SID S1 and S2.
+        In the above figure, an SRv6-based BGP VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and SRv6 SID S1 and S2.
+        SID S1 and S2 are allocated from flex-algo 129 (low latency) locators.
         </t>
         <ul>
-            <li>PE3's routing table resolves L1 via P1 path (high bandwidth path) and S1 via P2 path (low latency path).</li>
-            <li>PE3's routing table resolves L2 via P1 path (high bandwidth path) and S2 via P2 path (low latency path).</li>
+            <li>Costs in parentheses represents cost of algo 0 (as defined in <xref target="RFC8665"/> Section 8.5).</li>
+            <li>Costs in brackets represents cost of flex algo <xref target="RFC9350"/> 129 (low latency).</li>
         </ul>
         <t>
-        Based on [RFC4271] procedures, PE3 will select the path with the lowest cost to the NEXT_HOP address.
-        If the cost to L1 is lower than the cost to L2, PE3 will select the path received from PE1.
+        The routing table of PE3 contains the following entries:
+        </t>
+        <ul>
+            <li>N1 is resolved via P1 path (Shortest Path First (SPF) path) and S1 via P2 path (low latency path).</li>
+            <li>N2 is resolved via P1 path (SPF path) and S2 via P2 path (low latency path).</li>
+        </ul>
+        <t>
+        Based on <xref target="RFC4271"/> procedures, PE3 will select the path with the lowest cost to the NEXT_HOP address.
+        Cost to N1 is lower than cost to N2, so PE3 will select the path received from PE1.
+        However, the forwarding path to reach P/m when using the path received from PE1 is PE3->P2->PE1.
         </t>
         <t>
         Two problems may arise:
         </t>
         <ul>
             <li>PE3 will not try to resolve S1, which may lead to traffic blackholing if the path to S1 is not reachable.</li>
-            <li>PE3 may not select the best path with the lowest latency to reach P/m as it will only consider the cost to the NEXT_HOP address.</li>
+            <li>PE3 do not select the best path based on the lowest latency intent to reach P/m as it will only consider the cost to the NEXT_HOP address.</li>
         </ul>
       </section>
       <section title="MPLS path">
@@ -277,8 +286,10 @@
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.4271.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8665.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9012.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9252.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9350.xml"/>
       </references>
  
       <references>
