@@ -92,6 +92,9 @@
         </artwork>
         </figure>
         <t>
+          figure text...
+        </t>
+        <t>
         This document describes cases where the next-hop attribute used in the BGP update is not representative of the actual forwarding path. 
         In these cases, the resolvability condition may fail in its goal and path selection may be done on inaccurate criteria leading to suboptimal routing, network congestion, traffic blackholing...
         </t>
@@ -121,6 +124,8 @@
       <section title="Segment Routing Traffic Engineering policy">
       </section>
       <section title="SRv6 services">
+      </section>
+      <section title="MPLS path">
       </section>
     </section>
     

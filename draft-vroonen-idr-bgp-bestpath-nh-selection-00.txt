@@ -82,6 +82,7 @@ Table of Contents
      3.1.  Tunnel encapsulation attribute  . . . . . . . . . . . . .   4
      3.2.  Segment Routing Traffic Engineering policy  . . . . . . .   4
      3.3.  SRv6 services . . . . . . . . . . . . . . . . . . . . . .   4
+     3.4.  MPLS path . . . . . . . . . . . . . . . . . . . . . . . .   4
    4.  Modification of the BGP route selection process . . . . . . .   4
      4.1.  Forwarding address  . . . . . . . . . . . . . . . . . . .   4
      4.2.  Lookup table  . . . . . . . . . . . . . . . . . . . . . .   5
@@ -103,7 +104,6 @@ Table of Contents
    "OPTIONAL" in this document are to be interpreted as described in BCP
    14 [RFC2119] [RFC8174] when, and only when, they appear in all
    capitals, as shown here.
-
 
 
 
@@ -135,6 +135,8 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
                                   Figure 1
 
+   figure text...
+
    This document describes cases where the next-hop attribute used in
    the BGP update is not representative of the actual forwarding path.
    In these cases, the resolvability condition may fail in its goal and
@@ -155,13 +157,11 @@ Internet-Draft        BGP nh selection enhancements         October 2025
       take into account that the cost associated with the tunnel may be
       different from the cost associated with the BGP next-hop.
 
-
-
-
-
-
-
-
+   *  [RFC9252] defines SRv6 overlay services signaling using BGP.  The
+      procedures involve the advertisement of an SRv6 Service TLV within
+      the BGP Prefix SID attribute to signal the SID to be used for
+      forwarding.  RFC9252 highlights that ingress PE must perform a
+      resolvability check for the SRv6 SID in addition to the
 
 
 
@@ -170,11 +170,6 @@ Vroonen & Litkowski       Expires 13 April 2026                 [Page 3]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   *  [RFC9252] defines SRv6 overlay services signaling using BGP.  The
-      procedures involve the advertisement of an SRv6 Service TLV within
-      the BGP Prefix SID attribute to signal the SID to be used for
-      forwarding.  RFC9252 highlights that ingress PE must perform a
-      resolvability check for the SRv6 SID in addition to the
       resolvability check done on the next-hop attribute.  However, it
       doesn’t take into account that the cost associated with the tunnel
       may be different from the cost associated with the BGP next-hop.
@@ -189,6 +184,8 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 3.2.  Segment Routing Traffic Engineering policy
 
 3.3.  SRv6 services
+
+3.4.  MPLS path
 
 4.  Modification of the BGP route selection process
 
@@ -217,6 +214,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    the information contained in these TLVs can be used as additional
    context to the forwarding address.  When [RFC9252] is used, it is
    easy to assume that the forwarding context is SRv6 forwarding.
+
+
+
 
 
 
