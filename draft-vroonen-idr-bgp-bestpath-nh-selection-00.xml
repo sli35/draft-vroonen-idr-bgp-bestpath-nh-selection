@@ -87,12 +87,24 @@
         As per <xref target="RFC4271"/> Section 9.1.2.2 e), when comparing paths received via internal BGP (IBGP), the Routing Table metric associated to the BGP route next-hop address is used to figure out the best path.
         </t>
         <figure>
-        <artwork>
-            FIGURE TO ADD
+        <artwork><![CDATA[
+                +------+ 
+                | RTR1 |----------------+
+                +------+       (1)      |
+                                        |
+                                    +------+
+                                    | RTR3 |
+                                    +------+
+                                        |
+                +------+       (2)      |
+                | RTR2 |----------------+
+                +------+ 
+          ]]>
         </artwork>
         </figure>
         <t>
-          figure text...
+        RTR3 receives prefix P/m from RTR1 and RTR2 with NEXT_HOP N1 and N2. N1 resolution have a cost of 1, N2 resolution have a cost of 2.
+        Based on <xref target="RFC4271"/> procedures, RTR3 will select the path with the lowest cost to the NEXT_HOP address, so RTR3 will select the path received from RTR1.
         </t>
         <t>
         This document describes cases where the NEXT_HOP attribute used in the BGP update is not representative of the actual forwarding path. 
@@ -122,6 +134,34 @@
       <section title="Tunnel encapsulation attribute">
       </section>
       <section title="Segment Routing Traffic Engineering policy">
+        <t>
+        When using SRTE policies <xref target="RFC9256"/> , the BGP NEXT_HOP attribute may not accurately represent the actual forwarding path.
+        </t>
+        <figure>
+          <name>SRTE policies example</name>
+          <artwork><![CDATA[
+                +-----+ (1) +----+  (1)
+                | PE1 |-----| P1 |-----+
+                +-----+ [5] +----+  [5]|
+                       \   /           |
+                    (5) \ / (1)     +-----+
+                         X          | PE3 |
+                    [1] / \ [5]     +-----+
+                       /   \           |
+                +-----+ [2] +----+  [1]|
+                | PE2 |-----| P2 |-----+
+                +-----+ (6) +----+  (5)
+          ]]>
+          </artwork>
+        </figure>
+        <t>
+        In the above figure, a BGP VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and color C1.
+        On PE3, policies with color C1 towards N1 and N2 are configured to use the low latency path (P2 path).
+        </t>
+        <ul>
+            <li>Costs in parentheses represents cost of IGP.</li>
+            <li>Costs in brackets represents cost of te-metric (Traffic Engineering Metric)</li>
+        </ul>
       </section>
       <section title="SRv6 services">
         <t>
@@ -289,6 +329,7 @@
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8665.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9012.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9252.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9256.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9350.xml"/>
       </references>
  
