@@ -266,10 +266,10 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
                         Table 2: SR Policies of PE3
 
-   Considering that PE3 takes into account the cost of the SR policy and
-   then picks up the path from PE2 as best.  If the SR Policy (C1, N2)
-   goes down, and considering that color C1 is using CO-flag equal to
-   00, path from PE2 is authorized to use IGP path to next-hop N2
+   Considering that PE3 may take into account the cost of the SR policy
+   and then picks up the path from PE2 as best.  If the SR Policy (C1,
+   N2) goes down, and considering that color C1 is using CO-flag equal
+   to 00, path from PE2 is authorized to use IGP path to next-hop N2
    (fallback to IGP path).  This may not be desirable as the intent of
    the service is to use a low-latency path.  It may be suitable then
    for PE3 to prefer other paths that uses a color 1 based SR policy or
