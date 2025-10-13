@@ -5,8 +5,8 @@
 Interdomain Working Group                                O. Vroonen, Ed.
 Internet-Draft                                              S. Litkowski
 Updates: 4271 (if approved)                                        Cisco
-Intended status: Standards Track                         10 October 2025
-Expires: 13 April 2026
+Intended status: Standards Track                         13 October 2025
+Expires: 16 April 2026
 
 
              BGP best path next-hop selection enhancements
@@ -53,12 +53,12 @@ Status of This Memo
 
 
 
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 1]
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 1]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   This Internet-Draft will expire on 13 April 2026.
+   This Internet-Draft will expire on 16 April 2026.
 
 Copyright Notice
 
@@ -80,21 +80,21 @@ Table of Contents
    2.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
    3.  Use cases . . . . . . . . . . . . . . . . . . . . . . . . . .   4
      3.1.  Tunnel encapsulation attribute  . . . . . . . . . . . . .   4
-     3.2.  Segment Routing Traffic Engineering policy  . . . . . . .   4
-     3.3.  SRv6 services . . . . . . . . . . . . . . . . . . . . . .   5
-     3.4.  MPLS path . . . . . . . . . . . . . . . . . . . . . . . .   6
-   4.  Modification of the BGP route selection process . . . . . . .   6
-     4.1.  Forwarding address  . . . . . . . . . . . . . . . . . . .   6
-     4.2.  Lookup table  . . . . . . . . . . . . . . . . . . . . . .   7
-     4.3.  Route resolvability condition . . . . . . . . . . . . . .   7
-     4.4.  Internal cost determination . . . . . . . . . . . . . . .   7
-   5.  Examples  . . . . . . . . . . . . . . . . . . . . . . . . . .   8
-   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   8
-   7.  Security Considerations . . . . . . . . . . . . . . . . . . .   8
-   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   8
-     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   8
-     8.2.  Informative References  . . . . . . . . . . . . . . . . .   9
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .   9
+     3.2.  Segment Routing Traffic Engineering Policy  . . . . . . .   4
+     3.3.  SRv6 services . . . . . . . . . . . . . . . . . . . . . .   6
+     3.4.  MPLS path . . . . . . . . . . . . . . . . . . . . . . . .   7
+   4.  Modification of the BGP route selection process . . . . . . .   7
+     4.1.  Forwarding address  . . . . . . . . . . . . . . . . . . .   7
+     4.2.  Lookup table  . . . . . . . . . . . . . . . . . . . . . .   8
+     4.3.  Route resolvability condition . . . . . . . . . . . . . .   8
+     4.4.  Internal cost determination . . . . . . . . . . . . . . .   8
+   5.  Examples  . . . . . . . . . . . . . . . . . . . . . . . . . .   9
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .   9
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .   9
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .   9
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .   9
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .  10
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  10
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  10
 
 1.  Requirements Language
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 2]
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 2]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -131,26 +131,31 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    internal BGP (IBGP), the Routing Table metric associated to the BGP
    route next-hop address is used to figure out the best path.
 
+                            AS 1
+              <--------------------------------->
+
                    +------+
-                   | RTR1 |----------------+
-                   +------+       (1)      |
+            P/m  --| RTR1 |----------------+
+                   +------+       (M=1)    |
                                            |
                                        +------+
                                        | RTR3 |
                                        +------+
                                            |
-                   +------+       (2)      |
-                   | RTR2 |----------------+
+                   +------+       (M=2)    |
+            P/m  --| RTR2 |----------------+
                    +------+
 
 
                                   Figure 1
 
-   RTR3 receives prefix P/m from RTR1 and RTR2 with NEXT_HOP N1 and N2.
-   N1 resolution have a cost of 1, N2 resolution have a cost of 2.
-   Based on [RFC4271] procedures, RTR3 will select the path with the
-   lowest cost to the NEXT_HOP address, so RTR3 will select the path
-   received from RTR1.
+   In Figure 1, RTR3 receives prefix P/m from RTR1 and RTR2 (IBGP peers)
+   with NEXT_HOP N1 and N2.  RTR3 resolves N1 with a cost of 1 and with
+   a cost of 2.  Based on [RFC4271] procedures, RTR3 will select the
+   path with the lowest cost to the NEXT_HOP address, so RTR3 will
+   select the path received from RTR1.  In this example, the path used
+   to resolve N1 and N2 reflects the actual forwarding path which makes
+   the best path decision done by RTR3 accurate.
 
    This document describes cases where the NEXT_HOP attribute used in
    the BGP update is not representative of the actual forwarding path.
@@ -158,17 +163,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    path selection may be done on inaccurate criteria leading to
    suboptimal routing, network congestion, traffic blackholing...
 
-   These use cases are not new and may have been partially addressed by
-   IETF standards or drafts, some references are provided below:
 
 
-
-
-
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 3]
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 3]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
+
+   These use cases are not new and may have been partially addressed by
+   IETF standards or drafts, some references are provided below:
 
    *  [I-D.ietf-idr-bgp-bestpath-selection-criteria] addresses the case
       of MPLS networks and proposes a modification of the route
@@ -197,105 +200,152 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 3.1.  Tunnel encapsulation attribute
 
-3.2.  Segment Routing Traffic Engineering policy
+3.2.  Segment Routing Traffic Engineering Policy
 
-   When using SRTE policies [RFC9256] , the BGP NEXT_HOP attribute may
-   not accurately represent the actual forwarding path.
+   When using SR Policies [RFC9256], the BGP NEXT_HOP attribute may not
+   accurately represent the actual forwarding path.
 
-                   +-----+ (1) +----+  (1)
-                   | PE1 |-----| P1 |-----+
-                   +-----+ [5] +----+  [5]|
-                          \   /           |
-                       (5) \ / (1)     +-----+
-                            X          | PE3 |
-                       [1] / \ [5]     +-----+
-                          /   \           |
-                   +-----+ [2] +----+  [1]|
-                   | PE2 |-----| P2 |-----+
-                   +-----+ (6) +----+  (5)
-
-
-                      Figure 2: SRTE policies example
+             +-----+ (M=1) +----+  (M=1)
+     P/m  -- | PE1 |-------| P1 |--------+
+             +-----+ [D=6] +----+  [D=6] |
+                                         |
+                                       +-----+
+                                       | PE3 |
+                                       +-----+
+                                          |
+             +-----+ [D=2] +----+  [D=2]  |
+     P/m  -- | PE2 |-------| P2 |---------+
+             +-----+ (M=5) +----+  (M=5)
 
 
 
 
 
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 4]
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 4]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   In the above figure, a BGP VPN is deployed over PEs.  Let's assume
-   PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and
-   color C1.  On PE3, policies with color C1 towards N1 and N2 are
-   configured to use the low latency path (P2 path).
+                 Figure 2: Next hop not used for forwarding
+
+   In the above figure, a BGP VPN service is deployed between the PEs.
+   Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP
+   N1, N2 and color C1.  On PE3, SR Policies (C1, N1) and (C1, N2) are
+   configured to use the low latency path.
 
    *  Costs in parentheses represents cost of IGP.
 
-   *  Costs in brackets represents cost of te-metric (Traffic
-      Engineering Metric)
+   *  Costs in brackets represents cost of latency-based metric
+
+   If PE3 performs the next-hop resolution solely based on the BGP
+   NEXT_HOP attribute, it will not verify that an SR policy (C1, Nx)
+   exists and is up before using it.  It may also pick the wrong best
+   path by considering the cost to the NEXT_HOP address instead of the
+   cost of the SR policy.  The best path considering SR-policy (C1, Nx)
+   cost is via PE2, while the best path considering IGP metric is via
+   PE1.
+
+                       +========+==========+======+
+                       | Prefix | Next hop | Cost |
+                       +========+==========+======+
+                       | N1     | P1       | 2    |
+                       +--------+----------+------+
+                       | N2     | P2       | 10   |
+                       +--------+----------+------+
+
+                          Table 1: IPv4 routing
+                               table of PE3
+
+                  +===========+==========+======+=======+
+                  | SR Policy | Next hop | Cost | State |
+                  +===========+==========+======+=======+
+                  | (C1, N1)  | P1       | 12   | Up    |
+                  +-----------+----------+------+-------+
+                  | (C1, N2)  | P2       | 4    | Up    |
+                  +-----------+----------+------+-------+
+
+                        Table 2: SR Policies of PE3
+
+   Considering that PE3 may take into account the cost of the SR policy
+   and then picks up the path from PE2 as best.  If the SR Policy (C1,
+   N2) goes down, and considering that color C1 is using CO-flag equal
+   to 00, path from PE2 is authorized to use IGP path to next-hop N2
+   (fallback to IGP path).  This may not be desirable as the intent of
+   the service is to use a low-latency path.  It may be suitable then
+   for PE3 to prefer other paths that uses a color 1 based SR policy or
+   even exclude any path that does not meet the color 1 requirement.
+
+
+
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 5]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
 3.3.  SRv6 services
 
    When using SRv6 services as defined in [RFC9252], the BGP NEXT_HOP
    attribute may not be representative of the actual forwarding path.
 
-                   +-----+ (1) +----+  (1)
-                   | PE1 |-----| P1 |-----+
-                   +-----+ [5] +----+  [5]|
-                          \   /           |
-                       (5) \ / (1)     +-----+
-                            X          | PE3 |
-                       [1] / \ [5]     +-----+
-                          /   \           |
-                   +-----+ [2] +----+  [1]|
-                   | PE2 |-----| P2 |-----+
-                   +-----+ (6) +----+  (5)
-
-
-                       Figure 3: SRv6 service example
-
-   In the above figure, an SRv6-based BGP VPN is deployed over PEs.
+   Considering Figure 2, an SRv6-based BGP VPN is deployed between the
+   PEs.  PE1 uses locator L1 for algorithm 0 and L1_FA for flexible
+   algorithm 128 ([RFC9350]) optimized for low-latency.  Simarly, PE2
+   uses locator L2 for algorithm 0 and L2_FA for flexible algorithm 128.
    Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP
-   N1, N2 and SRv6 SID S1 and S2.  SID S1 and S2 are allocated from
-   flex-algo 129 (low latency) locators.
+   N1, N2 and SRv6 SID S1 and S2.  SID S1 and S2 are allocated
+   respectively from L1_FA and L2_FA.
 
    *  Costs in parentheses represents cost of algo 0 (as defined in
       [RFC8665] Section 8.5).
 
-   *  Costs in brackets represents cost of flex algo [RFC9350] 129 (low
-      latency).
+   *  Costs in brackets represents cost of flexible algorithm [RFC9350]
+      129 which is using low-latency metric.
 
-   The routing table of PE3 contains the following entries:
+   The IPv6 routing table of PE3 contains the following entries:
 
-   *  N1 is resolved via P1 path (Shortest Path First (SPF) path) and S1
-      via P2 path (low latency path).
+                       +========+==========+======+
+                       | Prefix | Next hop | Cost |
+                       +========+==========+======+
+                       | N1     | P1       | 2    |
+                       +--------+----------+------+
+                       | N2     | P2       | 10   |
+                       +--------+----------+------+
+                       | L1     | P1       | 2    |
+                       +--------+----------+------+
+                       | L2     | P2       | 10   |
+                       +--------+----------+------+
+                       | L1_FA  | P1       | 12   |
+                       +--------+----------+------+
+                       | L2_FA  | P2       | 4    |
+                       +--------+----------+------+
 
-   *  N2 is resolved via P1 path (SPF path) and S2 via P2 path (low
-      latency path).
+                          Table 3: IPv6 routing
+                               table of PE3
+
+   Based on [RFC4271] procedures, PE3 verifies that NEXT_HOP address of
+   each path is resolvable.  Based on [RFC9252] procedures, PE3 verifies
+   that SID1 and SID2 address are resolvable.  PE3 will then select the
+   path with the lowest cost to the NEXT_HOP address according to
+   [RFC4271] .  Cost to N1 is lower than cost to N2, so PE3 will select
+   the path received from PE1.  However, from a latency perspective,
+   path to PE2 is the best one.
 
 
 
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 5]
+
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 6]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   Based on [RFC4271] procedures, PE3 will select the path with the
-   lowest cost to the NEXT_HOP address.  Cost to N1 is lower than cost
-   to N2, so PE3 will select the path received from PE1.  However, the
-   forwarding path to reach P/m when using the path received from PE1 is
-   PE3->P2->PE1.
-
-   Two problems may arise:
-
-   *  PE3 will not try to resolve S1, which may lead to traffic
-      blackholing if the path to S1 is not reachable.
-
-   *  PE3 do not select the best path based on the lowest latency intent
-      to reach P/m as it will only consider the cost to the NEXT_HOP
-      address.
+   The problem of path suboptimality may also happen with algorithm 0,
+   if for instance SRv6 traffic for algorithm 0 needs to be offloaded
+   from PE1, operator may increase the metric of the locator (while not
+   changing the metric of the next-hop) on PE1.  In the example above,
+   if L1 is advertised by PE1 with an offset of 1M, then PE3 will have
+   to cost to L1 of 1000002 but N1 will still be reachable with a cost
+   of 2.  The cost to reach the SID must also be taken into account in
+   this scenario to ensure that the traffic offload works properly.
 
 3.4.  MPLS path
 
@@ -327,21 +377,22 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    context to the forwarding address.  When [RFC9252] is used, it is
    easy to assume that the forwarding context is SRv6 forwarding.
 
-
-
-
-
-
-
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 6]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
    Each new BGP extension SHOULD specify if an address carried by the
    extension must be considered as a forwarding address.  The procedures
    defined in the next section SHOULD apply for any new forwarding
    address defined without having to redefine them.
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 7]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
 4.2.  Lookup table
 
@@ -375,7 +426,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
                Path2: NH=R2 SRv6-SID: R2_SID
                Path3: NH=R3 Tunnel-encap(L2TPv3, endpoint: R3)
 
-                                  Figure 4
+                                  Figure 3
 
    Costs retrieved from different types of forwarding addresses or
    contexts may not be comparable because they are based on different
@@ -384,16 +435,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    will reflect the latency to R1.  Path2 may use the IGP cost to R2.
    Path3 may have no cost.  These values are not directly comparable.
 
-
-
-
-
-
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 7]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
    In order to compare the paths, this document introduces the concept
    of forwarding address preference.  The preference value may come from
    the table lookup, or BGP local configuration may override it (for
@@ -401,6 +442,13 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    while L2TP tunnels may have the lowest preference).
 
    This document updates [RFC4271] Section 9.1.2.2 e) as follows:
+
+
+
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 8]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
    *  Remove from consideration any routes with less forwarding address
       preference.  The forwarding preference of a path is determined by
@@ -440,16 +488,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
 
-
-
-
-
-
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 8]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
    [RFC4271]  Rekhter, Y., Ed., Li, T., Ed., and S. Hares, Ed., "A
               Border Gateway Protocol 4 (BGP-4)", RFC 4271,
               DOI 10.17487/RFC4271, January 2006,
@@ -458,6 +496,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/info/rfc8174>.
+
+
+
+
+
+Vroonen & Litkowski       Expires 16 April 2026                 [Page 9]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
    [RFC8665]  Psenak, P., Ed., Previdi, S., Ed., Filsfils, C., Gredler,
               H., Shakir, R., Henderickx, W., and J. Tantsura, "OSPF
@@ -498,14 +545,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 Acknowledgements
 
 
-
-
-
-Vroonen & Litkowski       Expires 13 April 2026                 [Page 9]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
 Authors' Addresses
 
    Olivier Vroonen (editor)
@@ -515,6 +554,14 @@ Authors' Addresses
 
    Stephane Litkowski
    Cisco
+
+
+
+Vroonen & Litkowski       Expires 16 April 2026                [Page 10]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
    Email: slitkows@cisco.com
 
 
@@ -557,4 +604,13 @@ Authors' Addresses
 
 
 
-Vroonen & Litkowski       Expires 13 April 2026                [Page 10]
+
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 16 April 2026                [Page 11]

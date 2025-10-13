@@ -86,25 +86,31 @@
         <xref target="RFC4271"/> Section 9.1.2.1 defines the route resolvability condition: a BGP route is considered unresolvable if the BGP speaker’s routing table has no route matching the BGP route next-hop address.
         As per <xref target="RFC4271"/> Section 9.1.2.2 e), when comparing paths received via internal BGP (IBGP), the Routing Table metric associated to the BGP route next-hop address is used to figure out the best path.
         </t>
-        <figure>
+        <figure anchor="base-bgp-nh-selection">
+        <name></name>
         <artwork><![CDATA[
+
+                         AS 1
+           <--------------------------------->
+
                 +------+ 
-                | RTR1 |----------------+
-                +------+       (1)      |
+         P/m  --| RTR1 |----------------+
+                +------+       (M=1)    |
                                         |
                                     +------+
                                     | RTR3 |
                                     +------+
                                         |
-                +------+       (2)      |
-                | RTR2 |----------------+
+                +------+       (M=2)    |
+         P/m  --| RTR2 |----------------+
                 +------+ 
           ]]>
         </artwork>
         </figure>
         <t>
-        RTR3 receives prefix P/m from RTR1 and RTR2 with NEXT_HOP N1 and N2. N1 resolution have a cost of 1, N2 resolution have a cost of 2.
-        Based on <xref target="RFC4271"/> procedures, RTR3 will select the path with the lowest cost to the NEXT_HOP address, so RTR3 will select the path received from RTR1.
+        In <xref target="base-bgp-nh-selection"/>, RTR3 receives prefix P/m from RTR1 and RTR2 (IBGP peers) with NEXT_HOP N1 and N2. RTR3 resolves N1 with a cost of 1 and with a cost of 2.
+        Based on <xref target="RFC4271"/> procedures, RTR3 will select the path with the lowest cost to the NEXT_HOP address, so RTR3 will select the path received from RTR1. In this example, the
+        path used to resolve N1 and N2 reflects the actual forwarding path which makes the best path decision done by RTR3 accurate.
         </t>
         <t>
         This document describes cases where the NEXT_HOP attribute used in the BGP update is not representative of the actual forwarding path. 
@@ -133,84 +139,107 @@
     <section title="Use cases">
       <section title="Tunnel encapsulation attribute">
       </section>
-      <section title="Segment Routing Traffic Engineering policy">
+      <section title="Segment Routing Traffic Engineering Policy">
         <t>
-        When using SRTE policies <xref target="RFC9256"/> , the BGP NEXT_HOP attribute may not accurately represent the actual forwarding path.
+        When using SR Policies <xref target="RFC9256"/>, the BGP NEXT_HOP attribute may not accurately represent the actual forwarding path.
         </t>
-        <figure>
-          <name>SRTE policies example</name>
+        <figure anchor="next-hop-not-used-for-fwding">
+          <name>Next hop not used for forwarding</name>
           <artwork><![CDATA[
-                +-----+ (1) +----+  (1)
-                | PE1 |-----| P1 |-----+
-                +-----+ [5] +----+  [5]|
-                       \   /           |
-                    (5) \ / (1)     +-----+
-                         X          | PE3 |
-                    [1] / \ [5]     +-----+
-                       /   \           |
-                +-----+ [2] +----+  [1]|
-                | PE2 |-----| P2 |-----+
-                +-----+ (6) +----+  (5)
+          +-----+ (M=1) +----+  (M=1)
+  P/m  -- | PE1 |-------| P1 |--------+
+          +-----+ [D=6] +----+  [D=6] |
+                                      |
+                                    +-----+
+                                    | PE3 |
+                                    +-----+
+                                       |
+          +-----+ [D=2] +----+  [D=2]  |
+  P/m  -- | PE2 |-------| P2 |---------+
+          +-----+ (M=5) +----+  (M=5)
           ]]>
           </artwork>
         </figure>
         <t>
-        In the above figure, a BGP VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and color C1.
-        On PE3, policies with color C1 towards N1 and N2 are configured to use the low latency path (P2 path).
+        In the above figure, a BGP VPN service is deployed between the PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and color C1.
+        On PE3, SR Policies (C1, N1) and (C1, N2) are configured to use the low latency path.
         </t>
         <ul>
             <li>Costs in parentheses represents cost of IGP.</li>
-            <li>Costs in brackets represents cost of te-metric (Traffic Engineering Metric)</li>
+            <li>Costs in brackets represents cost of latency-based metric</li>
         </ul>
+        <t>
+        If PE3 performs the next-hop resolution solely based on the BGP NEXT_HOP attribute, it will not verify that an SR policy (C1, Nx) exists and is up before using it.
+        It may also pick the wrong best path by considering the cost to the NEXT_HOP address instead of the cost of the SR policy. The best path considering SR-policy (C1, Nx) cost is via PE2, while the best path considering IGP metric is via PE1.
+        </t>
+        <table>
+        <name>IPv4 routing table of PE3</name>
+        <thead>
+        <tr><th>Prefix</th><th>Next hop</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>P1</td><td>2</td></tr>
+        <tr><td>N2</td><td>P2</td><td>10</td></tr>
+        </tbody>
+        </table>
+        <table>
+        <name>SR Policies of PE3</name>
+        <thead>
+        <tr><th>SR Policy</th><th>Next hop</th><th>Cost</th><th>State</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>(C1, N1)</td><td>P1</td><td>12</td><td>Up</td></tr>
+        <tr><td>(C1, N2)</td><td>P2</td><td>4</td><td>Up</td></tr>
+        </tbody>
+        </table>
+        <t>
+        Considering that PE3 may take into account the cost of the SR policy and then picks up the path from PE2 as best. 
+        If the SR Policy (C1, N2) goes down, and considering that color C1 is using CO-flag equal to 00, path from PE2 is authorized to use IGP path to next-hop N2 (fallback to IGP path). 
+        This may not be desirable as the intent of the service is to use a low-latency path.
+        It may be suitable then for PE3 to prefer other paths that uses a color 1 based SR policy or even exclude any path that does not meet the color 1 requirement.
+        </t>
       </section>
       <section title="SRv6 services">
         <t>
         When using SRv6 services as defined in <xref target="RFC9252"/>, the BGP NEXT_HOP attribute may not be representative of the actual forwarding path.
         </t>
-        <figure>
-          <name>SRv6 service example</name>
-          <artwork><![CDATA[
-                +-----+ (1) +----+  (1)
-                | PE1 |-----| P1 |-----+
-                +-----+ [5] +----+  [5]|
-                       \   /           |
-                    (5) \ / (1)     +-----+
-                         X          | PE3 |
-                    [1] / \ [5]     +-----+
-                       /   \           |
-                +-----+ [2] +----+  [1]|
-                | PE2 |-----| P2 |-----+
-                +-----+ (6) +----+  (5)
-          ]]>
-          </artwork>
-        </figure>
         <t>
-        In the above figure, an SRv6-based BGP VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and SRv6 SID S1 and S2.
-        SID S1 and S2 are allocated from flex-algo 129 (low latency) locators.
+        Considering <xref target="next-hop-not-used-for-fwding"/>, an SRv6-based BGP VPN is deployed between the PEs. PE1 uses locator L1 for algorithm 0 and L1_FA for flexible algorithm 128 (<xref target="RFC9350"/>) optimized for low-latency. Simarly, PE2 uses locator L2 for algorithm 0 and L2_FA for flexible algorithm 128. 
+        Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and SRv6 SID S1 and S2.
+        SID S1 and S2 are allocated respectively from L1_FA and L2_FA.
         </t>
         <ul>
             <li>Costs in parentheses represents cost of algo 0 (as defined in <xref target="RFC8665"/> Section 8.5).</li>
-            <li>Costs in brackets represents cost of flex algo <xref target="RFC9350"/> 129 (low latency).</li>
+            <li>Costs in brackets represents cost of flexible algorithm <xref target="RFC9350"/> 129 which is using low-latency metric.</li>
         </ul>
         <t>
-        The routing table of PE3 contains the following entries:
+        The IPv6 routing table of PE3 contains the following entries:
         </t>
-        <ul>
-            <li>N1 is resolved via P1 path (Shortest Path First (SPF) path) and S1 via P2 path (low latency path).</li>
-            <li>N2 is resolved via P1 path (SPF path) and S2 via P2 path (low latency path).</li>
-        </ul>
+        <table>
+        <name>IPv6 routing table of PE3</name>
+        <thead>
+        <tr><th>Prefix</th><th>Next hop</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>P1</td><td>2</td></tr>
+        <tr><td>N2</td><td>P2</td><td>10</td></tr>
+        <tr><td>L1</td><td>P1</td><td>2</td></tr>
+        <tr><td>L2</td><td>P2</td><td>10</td></tr>
+        <tr><td>L1_FA</td><td>P1</td><td>12</td></tr>
+        <tr><td>L2_FA</td><td>P2</td><td>4</td></tr>
+        </tbody>
+        </table>
         <t>
-        Based on <xref target="RFC4271"/> procedures, PE3 will select the path with the lowest cost to the NEXT_HOP address.
-        Cost to N1 is lower than cost to N2, so PE3 will select the path received from PE1.
-        However, the forwarding path to reach P/m when using the path received from PE1 is PE3->P2->PE1.
+        Based on <xref target="RFC4271"/> procedures, PE3 verifies that NEXT_HOP address of each path is resolvable.
+        Based on <xref target="RFC9252"/> procedures, PE3 verifies that SID1 and SID2 address are resolvable.
+        PE3 will then select the path with the lowest cost to the NEXT_HOP address according to <xref target="RFC4271"/> .
+        Cost to N1 is lower than cost to N2, so PE3 will select the path received from PE1. However, from a latency perspective, path to PE2 is the best one.
         </t>
         <t>
-        Two problems may arise:
+        The problem of path suboptimality may also happen with algorithm 0, if for instance SRv6 traffic for algorithm 0 needs to be offloaded from PE1, operator may increase the metric of the locator (while not changing the metric of the next-hop) on PE1.
+        In the example above, if L1 is advertised by PE1 with an offset of 1M, then PE3 will have to cost to L1 of 1000002 but N1 will still be reachable with a cost of 2.
+        The cost to reach the SID must also be taken into account in this scenario to ensure that the traffic offload works properly.
         </t>
-        <ul>
-            <li>PE3 will not try to resolve S1, which may lead to traffic blackholing if the path to S1 is not reachable.</li>
-            <li>PE3 do not select the best path based on the lowest latency intent to reach P/m as it will only consider the cost to the NEXT_HOP address.</li>
-        </ul>
       </section>
       <section title="MPLS path">
       </section>
