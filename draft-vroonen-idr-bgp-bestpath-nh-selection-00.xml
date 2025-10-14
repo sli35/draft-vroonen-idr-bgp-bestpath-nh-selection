@@ -282,19 +282,22 @@
             </t>
         </section>
 
-        <section anchor="lookup-in-table" title="Lookup table/Resolution filters">
+        <section anchor="lookup-in-table" title="Lookup table and resolution filters">
         <t>
-        When the forwarding address and its context are identified for a BGP route, the implementation knows the characteristics of the forwarding path to be used.
-        Each implementation has its own way of storing the various types of forwarding paths: they may be separated into different tables or share the same table.
+        When the forwarding address and its context are identified for a BGP route, the implementation may know the required characteristics of the path to be used to resolve the forwarding address.
+        Each implementation has its own way of storing the various types of routes (e.g.: IP, RSVP-TE LSP, LDP LSP, SRv6, SR Policies,...): routes may be separated into different tables or share the same table.
         </t>
         <t>
-        Each implementation needs to figure out the proper internal table to use based on the forwarding address/context and, if needed, the filters to apply on the route lookup results. 
-        An example of filter could be that the route lookup result should have an MPLS outgoing path, or should be a tunnel (of any type) or resolution cannot be done on a prefix which mask is less than /32.
+        Each implementation needs to figure out the proper internal table to use based on the forwarding address/context. When a table contains various types of routes, filtering is required to ensure that the forwarding address is resolved through the required type of route.
+        An example of filter rule could be that the resolved route of the forwarding address should have an MPLS outgoing path, or should be a tunnel (of any type). 
+        Resolution filters allow to constraint the resolution of the forwarding address to specific routes by using any attribute of these routes (source protocol, type of outgoing path,...). 
         </t>
         <t>
-        The BGP update may not provide enough context to determine the constraints of the forwarding path. 
+        The BGP update may not provide enough context to determine the constraints of the forwarding path.
         Reusing the example defined in <xref target="mpls-path-use-case"/>, if we consider an IPv4 unicast BGP service carried over a BGP free-core, the BGP NEXT_HOP must be reachable through a tunnel to allow the end-to-end packet delivery.
-        Such a case cannot be derived from the BGP update context and BGP must be configured to resolve the NEXT_HOP only through tunnels (of any or specific types). An implementation MAY provide a set of configuration options to resolution table and/or resolution filters.
+        Such a case cannot be derived from the BGP update context and BGP must be configured to resolve the NEXT_HOP only through tunnels (of any or specific types). 
+        Similarly, when aggregate routes are present in the routing table, user may want to prevent the forwarding address (which is a specific route) to be resolved over the aggregate routes. A resolution filter based on prefix/mask can be done to avoid such resolution to be valid.
+        An implementation MAY provide a set of configuration options to resolution table and/or resolution filters.
         </t>
         </section>
 
@@ -311,6 +314,9 @@
             </li>
             <li>
                 When resolving the forwarding address, look up SHOULD be performed in the table identified from the forwarding address and context.
+            </li>
+            <li>
+                If a resolution filter is used, a BGP route is considered unresolvable if the table does not contain a route that satisfies the filter criteria.
             </li>
         </ul>
         </section>
@@ -350,7 +356,7 @@
         </section>
     </section>
 
-    <section title="Example_SLI">
+    <section title="Example">
       <t>
       The example below illustrates the logic of forwarding address preference and cost comparison.
       </t>
@@ -411,75 +417,7 @@
       Finally, PE4 will compare the internal costs between paths from PE1 and PE2 as they have the same preference and path from PE2 will be elected as best because it has the lowest cost.
       </t>
     </section>
-    <section title="Example">
-      <t>
-      The example below illustrates the logic of forwarding address preference and cost comparison.
-      </t>
-      <figure>
-          <name>MPLS/SRv6 service example</name>
-          <artwork><![CDATA[
-                   +-----+          (M=1)  
-           P/m  -- | PE1 |----------------+
-                   +-----+          [D=5] |
-                   +-----+ (M=5)          |
-           P/m  -- | PE2 |----------+     |
-                   +-----+ [D=1]    |  +-----+
-                                    +--| IWG |
-                   +-----+ (M=2)    |  +-----+
-           P/m  -- | PE3 |----------+     |
-                   +-----+                |
-                   +-----+          (M=6) |
-           P/m  -- | PE4 |----------------+
-                   +-----+          
-          ]]>
-          </artwork>
-        </figure>
-        <t>
-        In the above figure, IWG device is acting as an Inter Working Gateway (IWG) between an SRv6 and an MPLS-based BGP VPN. 
-        Let's assume IWG receives prefix P/m in the SRv6 domain from PE1, PE2 (with respectively NEXT_HOP N1, SRv6 SID SID1 and NEXT_HOP N2, SID2), and in the MPLS domain from PE3 and PE4 (with respectively NEXT_HOP N3 and N4)
-        BGP is configured on IWG to use forwarding address preference and forwarding address-based cost. SRv6 transport is given the best preference.
-        </t>
-        <ul>
-            <li>SRv6 domain is using flexible algorithm 129 which is using low-latency metric and MPLS domain is using algo 0.</li>
-            <li>Costs M in parentheses represents cost of algo 0 (as defined in <xref target="RFC8665"/> Section 8.5).</li>
-            <li>Costs D in brackets represents cost of flexible algorithm <xref target="RFC9350"/> 129 which is using low-latency metric.</li>
-            <li>PE1, PE2 and IWG are in the SRv6 domain, PE3, PE4 and IWG are in the MPLS domain.</li>
-        </ul>
-        <table>
-        <name>IPv6 routing table of PE3</name>
-        <thead>
-        <tr><th>Prefix</th><th>Cost</th></tr>
-        </thead>
-        <tbody>
-        <tr><td>N1</td><td>1</td></tr>
-        <tr><td>N2</td><td>5</td></tr>
-        <tr><td>L1_FA</td><td>5</td></tr>
-        <tr><td>L2_FA</td><td>1</td></tr>
-        </tbody>
-        </table>
-        <table>
-        <name>IPv4 routing table of PE3</name>
-        <thead>
-        <tr><th>Prefix</th><th>Cost</th></tr>
-        </thead>
-        <tbody>
-        <tr><td>N3</td><td>2</td></tr>
-        <tr><td>N4</td><td>6</td></tr>
-        </tbody>
-        </table>
-        <t>
-        IWG will first check the resolvability of N1, N2, N3 and N4. All are resolvable.
-        Then, IWG will check the forwarding address preference of the paths. Let's assume that the forwarding address preference of SRv6 paths is higher than the one of MPLS paths.
-        N3 and N4 will not be considered because the forwarding address preference of the MPLS path is lower than the SRv6 path.
-        Then, IWG will check the resolvability of S1 and S2. If both paths are resolvable, IWG will compare the internal costs. and then use the path received from PE2 because the cost to reach S2 (1) is lower than the cost to reach S1 (5).
-        </t>
-        <t>
-        If S1 and S2 are not resolvable and no other SRv6 paths are available, IWG will consider the second forwarding address preference, and evaluate those paths.
-        In this case, IWG will compare the cost to reach N3 (2) and N4 (6) and then use the path received from PE3 because the cost to reach N3 (2) is lower than the cost to reach N4 (6).
-        </t>
-
-    </section>
-
+    
     <section anchor="IANA">
       <name>IANA Considerations</name>
       <t>This document does not require any IANA actions.</t>
