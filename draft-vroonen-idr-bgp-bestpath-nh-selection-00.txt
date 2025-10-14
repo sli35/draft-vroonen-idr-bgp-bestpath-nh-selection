@@ -547,11 +547,11 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    Traffic destined to P/m is of high bandwidth and requires traffic-
    engineering to spread the traffic across the available links of the
    core.  RSVP-TE is used to provide traffic-engineering MPLS tunnels.
-   SR-MPLS is also used to provide best-effort reachability.  RSVP-TE is
-   given a better preference (higher value in this example) than SR-
-   MPLS.  RSVP-TE tunnel to PE3 cannot be established.
-
-
+   SR-MPLS is also used to provide best-effort reachability.  BGP is
+   configured to use the route preference (or administrative distance)
+   from table lookup as forwarding address preference.  RSVP-TE is given
+   a better route preference than SR-MPLS.  RSVP-TE tunnel to PE3 cannot
+   be established.
 
 
 
@@ -621,15 +621,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
      P/m
        Path1:
          from PE1, NH=N1
-         cost 1000, preference 250
+         cost 1000, forwarding address preference 250
 
        Path2:
          from PE2, NH=N2
-         cost 100, preference 250
+         cost 100, forwarding address preference 250
 
        Path3:
          from PE3, NH=NH3
-         cost 20, preference 110
+         cost 20, forwarding address preference 110
 
 
                                   Figure 4
