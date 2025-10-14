@@ -108,7 +108,7 @@
         </artwork>
         </figure>
         <t>
-        In <xref target="base-bgp-nh-selection"/>, RTR3 receives prefix P/m from RTR1 and RTR2 (IBGP peers) with NEXT_HOP N1 and N2. RTR3 resolves N1 with a cost of 1 and with a cost of 2.
+        In <xref target="base-bgp-nh-selection"/>, RTR3 receives prefix P/m from RTR1 and RTR2 (IBGP peers) with NEXT_HOP N1 and N2. RTR3 resolves N1 with a cost of 1 and N2 with a cost of 2.
         Based on <xref target="RFC4271"/> procedures, RTR3 will select the path with the lowest cost to the NEXT_HOP address, so RTR3 will select the path received from RTR1. In this example, the
         path used to resolve N1 and N2 reflects the actual forwarding path which makes the best path decision done by RTR3 accurate.
         </t>
@@ -148,12 +148,13 @@
           +-----+ (M=1) +----+  (M=1)
   P/m  -- | PE1 |-------| P1 |--------+
           +-----+       +----+        |
-        (M=1)\      _______|          |
-       [D=14] \    /                +-----+
-               +-----------+        | PE3 |
-                 /         |        +-----+
-         (M=5)  /          |           |
-         [D=14]/           |           |
+          (M=1)  \     /              |
+          [D=14]  \   /               |
+                   \ /              +-----+
+                    X               | PE3 |
+                   / \              +-----+
+          (M=5)   /   \                |
+          [D=14] /     \               |
           +-----+       +----+         |
   P/m  -- | PE2 |-------| P2 |---------+
           +-----+ (M=5) +----+  (M=5)
@@ -162,12 +163,12 @@
           </artwork>
         </figure>
         <t>
-        In the above figure, a BGP VPN service is deployed between the PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and color C1.
+        In <xref target="next-hop-not-used-for-fwding"/>, a BGP VPN service is deployed between the PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and color C1.
         On PE3, SR Policies (C1, N1) and (C1, N2) are configured to use the low latency path.
         </t>
         <ul>
-            <li>Costs in parentheses represents cost of IGP.</li>
-            <li>Costs in brackets represents cost of latency-based metric</li>
+            <li>Costs M in parentheses represents cost of IGP.</li>
+            <li>Costs D in brackets represents cost of latency-based metric</li>
         </ul>
         <t>
         If PE3 performs the next-hop resolution solely based on the BGP NEXT_HOP attribute, it will not verify that an SR policy (C1, Nx) exists and is up before using it.
@@ -195,7 +196,7 @@
         </table>
         <t>
         Considering that PE3 may take into account the cost of the SR policy and then picks up the path from PE2 as best. 
-        If the SR Policy (C1, N2) is down or not present, and considering that color C1 is using CO-flag equal to 00, path from PE2 is authorized to use IGP path to next-hop N2 (fallback to IGP path via P1 with cost=6) as there is no policy (C1, N2) available.
+        If the SR Policy (C1, N2) is down or not present, and considering that color C1 is using CO-flag equal to 00 (<xref target="RFC9246"/> Section 8.8.1), path from PE2 is authorized to use IGP path to next-hop N2 (fallback to IGP path via P1 with cost=6) as there is no policy (C1, N2) available.
         This situation has multiple drawbacks:
         </t>
         <ul>
@@ -211,12 +212,12 @@
         When using SRv6 services as defined in <xref target="RFC9252"/>, the BGP NEXT_HOP attribute may not be representative of the actual forwarding path.
         </t>
         <t>
-        Considering <xref target="next-hop-not-used-for-fwding"/>, an SRv6-based BGP VPN is deployed between the PEs. PE1 uses locator L1 for algorithm 0 and L1_FA for flexible algorithm 128 (<xref target="RFC9350"/>) optimized for low-latency. Simarly, PE2 uses locator L2 for algorithm 0 and L2_FA for flexible algorithm 128. 
+        Considering <xref target="next-hop-not-used-for-fwding"/>, an SRv6-based BGP VPN is deployed between the PEs. PE1 uses locator L1 for algorithm 0 and L1_FA for flexible algorithm 128 (<xref target="RFC9350"/>) optimized for low-latency. Similarly, PE2 uses locator L2 for algorithm 0 and L2_FA for flexible algorithm 128. 
         Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and SRv6 SID S1 and S2.
         SID S1 and S2 are allocated respectively from L1_FA and L2_FA.
         </t>
         <ul>
-            <li>Costs M in parentheses represents cost of algo 0 (as defined in <xref target="RFC8665"/> Section 8.5).</li>
+            <li>Costs M in parentheses represents cost of algorithm 0 (as defined in <xref target="RFC8665"/> Section 8.5).</li>
             <li>Costs D in brackets represents cost of flexible algorithm <xref target="RFC9350"/> 129 which is using low-latency metric.</li>
         </ul>
         <t>
@@ -238,7 +239,7 @@
         </table>
         <t>
         Based on <xref target="RFC4271"/> procedures, PE3 verifies that NEXT_HOP address of each path is resolvable.
-        Based on <xref target="RFC9252"/> procedures, PE3 verifies that SID1 and SID2 address are resolvable.
+        Based on <xref target="RFC9252"/> procedures, PE3 verifies that S1 and S2 addresses are resolvable.
         PE3 will then select the path with the lowest cost to the NEXT_HOP address according to <xref target="RFC4271"/> .
         Cost to N1 is lower than cost to N2, so PE3 will select the path received from PE1. However, from a latency perspective, path to PE2 is the best one.
         </t>
@@ -333,7 +334,7 @@
             ]]></artwork>
         </figure>
         <t>
-        Costs retrieved from different types of forwarding addresses or contexts may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR-TE policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
+        Costs retrieved from different types of forwarding addresses or contexts may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
         </t>
         <t>
         In order to compare the paths, this document introduces the concept of forwarding address preference. The preference value may come from the table lookup, or BGP local configuration may override it (for example, SR policies with color 200 may have the highest preference, while L2TP tunnels may have the lowest preference).
@@ -360,8 +361,25 @@
       <t>
       The example below illustrates the logic of forwarding address preference and cost comparison.
       </t>
+      <figure anchor="enhanced-bgp-nh-selection">
+      <artwork><![CDATA[
+                      +-----+     (M=5)
+              P/m  -- | PE1 |----------------+
+                      +-----+                |
+                                             |
+                                             |
+                      +-----+     (M=10)   +----+     (M=5)    +-----+
+              P/m  -- | PE2 |--------------| P1 |--------------| PE4 |
+                      +-----+              +----+              +-----+
+                                             |
+                                             |                                             
+                      +-----+     (M=15)     |
+              P/m  -- | PE3 |----------------+
+                      +-----+          
+      ]]></artwork>
+      </figure>
       <t>
-      A prefix P/m is reachable by PE4 from PE1, PE2, PE3 (with respectively NEXT_HOP N1, N2 and N3). Considering that the network is a BGP free core, traffic must be tunneled between edge devices.
+      In <xref target="enhanced-bgp-nh-selection"/>, a prefix P/m is reachable by PE4 from PE1, PE2, PE3 (with respectively NEXT_HOP N1, N2 and N3). Considering that the network is a BGP free core, traffic must be tunneled between edge devices.
       Traffic destined to P/m is of high bandwidth and requires traffic-engineering to spread the traffic across the available links of the core. RSVP-TE is used to provide traffic-engineering MPLS tunnels.
       SR-MPLS is also used to provide best-effort reachability. BGP is configured to use the route preference (or administrative distance) from table lookup as forwarding address preference. RSVP-TE is given a better route preference than SR-MPLS. 
       RSVP-TE tunnel to PE3 cannot be established.
@@ -445,6 +463,7 @@
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8665.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9012.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9246.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9252.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9256.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9350.xml"/>

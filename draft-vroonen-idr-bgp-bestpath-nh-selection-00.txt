@@ -88,13 +88,13 @@ Table of Contents
      4.3.  Route resolvability condition . . . . . . . . . . . . . .   9
      4.4.  Internal cost determination . . . . . . . . . . . . . . .   9
    5.  Example . . . . . . . . . . . . . . . . . . . . . . . . . . .  10
-   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  12
-   7.  Security Considerations . . . . . . . . . . . . . . . . . . .  12
-   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  12
-     8.1.  Normative References  . . . . . . . . . . . . . . . . . .  12
-     8.2.  Informative References  . . . . . . . . . . . . . . . . .  13
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  13
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  13
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  13
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .  13
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  13
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .  13
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .  14
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  14
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  14
 
 1.  Requirements Language
 
@@ -150,9 +150,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
                                   Figure 1
 
    In Figure 1, RTR3 receives prefix P/m from RTR1 and RTR2 (IBGP peers)
-   with NEXT_HOP N1 and N2.  RTR3 resolves N1 with a cost of 1 and with
-   a cost of 2.  Based on [RFC4271] procedures, RTR3 will select the
-   path with the lowest cost to the NEXT_HOP address, so RTR3 will
+   with NEXT_HOP N1 and N2.  RTR3 resolves N1 with a cost of 1 and N2
+   with a cost of 2.  Based on [RFC4271] procedures, RTR3 will select
+   the path with the lowest cost to the NEXT_HOP address, so RTR3 will
    select the path received from RTR1.  In this example, the path used
    to resolve N1 and N2 reflects the actual forwarding path which makes
    the best path decision done by RTR3 accurate.
@@ -203,20 +203,20 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    When using SR Policies [RFC9256], the BGP NEXT_HOP attribute may not
    accurately represent the actual forwarding path.
 
-                     [D=6]         [D=6]
-             +-----+ (M=1) +----+  (M=1)
-     P/m  -- | PE1 |-------| P1 |--------+
-             +-----+       +----+        |
-           (M=1)\      _______|          |
-          [D=14] \    /                +-----+
-                  +-----------+        | PE3 |
-                    /         |        +-----+
-            (M=5)  /          |           |
-            [D=14]/           |           |
-             +-----+       +----+         |
-     P/m  -- | PE2 |-------| P2 |---------+
-             +-----+ (M=5) +----+  (M=5)
-                     [D=2]         [D=2]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -226,16 +226,33 @@ Vroonen & Litkowski       Expires 17 April 2026                 [Page 4]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
+                     [D=6]         [D=6]
+             +-----+ (M=1) +----+  (M=1)
+     P/m  -- | PE1 |-------| P1 |--------+
+             +-----+       +----+        |
+             (M=1)  \     /              |
+             [D=14]  \   /               |
+                      \ /              +-----+
+                       X               | PE3 |
+                      / \              +-----+
+             (M=5)   /   \                |
+             [D=14] /     \               |
+             +-----+       +----+         |
+     P/m  -- | PE2 |-------| P2 |---------+
+             +-----+ (M=5) +----+  (M=5)
+                     [D=2]         [D=2]
+
+
             Figure 2: Next hop attribute not used for forwarding
 
-   In the above figure, a BGP VPN service is deployed between the PEs.
-   Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP
-   N1, N2 and color C1.  On PE3, SR Policies (C1, N1) and (C1, N2) are
+   In Figure 2, a BGP VPN service is deployed between the PEs.  Let's
+   assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2
+   and color C1.  On PE3, SR Policies (C1, N1) and (C1, N2) are
    configured to use the low latency path.
 
-   *  Costs in parentheses represents cost of IGP.
+   *  Costs M in parentheses represents cost of IGP.
 
-   *  Costs in brackets represents cost of latency-based metric
+   *  Costs D in brackets represents cost of latency-based metric
 
    If PE3 performs the next-hop resolution solely based on the BGP
    NEXT_HOP attribute, it will not verify that an SR policy (C1, Nx)
@@ -256,6 +273,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
                           Table 1: IPv4 routing
                                table of PE3
 
+
+
+
+
+Vroonen & Litkowski       Expires 17 April 2026                 [Page 5]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
+
                   +===========+==========+======+=======+
                   | SR Policy | Next hop | Cost | State |
                   +===========+==========+======+=======+
@@ -269,18 +295,10 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    Considering that PE3 may take into account the cost of the SR policy
    and then picks up the path from PE2 as best.  If the SR Policy (C1,
    N2) is down or not present, and considering that color C1 is using
-   CO-flag equal to 00, path from PE2 is authorized to use IGP path to
-   next-hop N2 (fallback to IGP path via P1 with cost=6) as there is no
-   policy (C1, N2) available.  This situation has multiple drawbacks:
-
-
-
-
-
-Vroonen & Litkowski       Expires 17 April 2026                 [Page 5]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
+   CO-flag equal to 00 ([RFC9246] Section 8.8.1), path from PE2 is
+   authorized to use IGP path to next-hop N2 (fallback to IGP path via
+   P1 with cost=6) as there is no policy (C1, N2) available.  This
+   situation has multiple drawbacks:
 
    *  Cost of the two BGP paths are not comparable which makes the
       comparison inaccurate: PE1 path uses a cost based on latency while
@@ -301,35 +319,17 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    Considering Figure 2, an SRv6-based BGP VPN is deployed between the
    PEs.  PE1 uses locator L1 for algorithm 0 and L1_FA for flexible
-   algorithm 128 ([RFC9350]) optimized for low-latency.  Simarly, PE2
+   algorithm 128 ([RFC9350]) optimized for low-latency.  Similarly, PE2
    uses locator L2 for algorithm 0 and L2_FA for flexible algorithm 128.
    Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP
    N1, N2 and SRv6 SID S1 and S2.  SID S1 and S2 are allocated
    respectively from L1_FA and L2_FA.
 
-   *  Costs M in parentheses represents cost of algo 0 (as defined in
-      [RFC8665] Section 8.5).
+   *  Costs M in parentheses represents cost of algorithm 0 (as defined
+      in [RFC8665] Section 8.5).
 
    *  Costs D in brackets represents cost of flexible algorithm
       [RFC9350] 129 which is using low-latency metric.
-
-   The IPv6 routing table of PE3 contains the following entries:
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -337,6 +337,8 @@ Vroonen & Litkowski       Expires 17 April 2026                 [Page 6]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
+
+   The IPv6 routing table of PE3 contains the following entries:
 
                        +========+==========+======+
                        | Prefix | Next hop | Cost |
@@ -359,7 +361,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    Based on [RFC4271] procedures, PE3 verifies that NEXT_HOP address of
    each path is resolvable.  Based on [RFC9252] procedures, PE3 verifies
-   that SID1 and SID2 address are resolvable.  PE3 will then select the
+   that S1 and S2 addresses are resolvable.  PE3 will then select the
    path with the lowest cost to the NEXT_HOP address according to
    [RFC4271] .  Cost to N1 is lower than cost to N2, so PE3 will select
    the path received from PE1.  However, from a latency perspective,
@@ -384,8 +386,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    a tunnel available to reach PE1 or PE2 that can carry MPLS traffic
    (e.g.: an MPLS Label Switched Path (LSP)).  By checking only for the
    existence of a route in its routing table, PE3 could create a traffic
-   blackhole if there is no tunnel to carry the MPLS VPN traffic.
-
 
 
 
@@ -393,6 +393,8 @@ Vroonen & Litkowski       Expires 17 April 2026                 [Page 7]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
+
+   blackhole if there is no tunnel to carry the MPLS VPN traffic.
 
 4.  Modification of the BGP route selection process
 
@@ -440,8 +442,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    use based on the forwarding address/context.  When a table contains
    various types of routes, filtering is required to ensure that the
    forwarding address is resolved through the required type of route.
-   An example of filter rule could be that the resolved route of the
-   forwarding address should have an MPLS outgoing path, or should be a
 
 
 
@@ -450,6 +450,8 @@ Vroonen & Litkowski       Expires 17 April 2026                 [Page 8]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
+   An example of filter rule could be that the resolved route of the
+   forwarding address should have an MPLS outgoing path, or should be a
    tunnel (of any type).  Resolution filters allow to constraint the
    resolution of the forwarding address to specific routes by using any
    attribute of these routes (source protocol, type of outgoing
@@ -496,8 +498,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
                Path2: NH=R2 SRv6-SID: R2_SID
                Path3: NH=R3 Tunnel-encap(L2TPv3, endpoint: R3)
 
-                                  Figure 3
-
 
 
 
@@ -506,12 +506,14 @@ Vroonen & Litkowski       Expires 17 April 2026                 [Page 9]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
+                                  Figure 3
+
    Costs retrieved from different types of forwarding addresses or
    contexts may not be comparable because they are based on different
-   sets of rules.  For instance, path1 may leverage an SR-TE policy
-   (color 200, endpoint R1) optimizing for latency, so the cost of path1
-   will reflect the latency to R1.  Path2 may use the IGP cost to R2.
-   Path3 may have no cost.  These values are not directly comparable.
+   sets of rules.  For instance, path1 may leverage an SR policy (color
+   200, endpoint R1) optimizing for latency, so the cost of path1 will
+   reflect the latency to R1.  Path2 may use the IGP cost to R2.  Path3
+   may have no cost.  These values are not directly comparable.
 
    In order to compare the paths, this document introduces the concept
    of forwarding address preference.  The preference value may come from
@@ -541,17 +543,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    The example below illustrates the logic of forwarding address
    preference and cost comparison.
 
-   A prefix P/m is reachable by PE4 from PE1, PE2, PE3 (with
-   respectively NEXT_HOP N1, N2 and N3).  Considering that the network
-   is a BGP free core, traffic must be tunneled between edge devices.
-   Traffic destined to P/m is of high bandwidth and requires traffic-
-   engineering to spread the traffic across the available links of the
-   core.  RSVP-TE is used to provide traffic-engineering MPLS tunnels.
-   SR-MPLS is also used to provide best-effort reachability.  BGP is
-   configured to use the route preference (or administrative distance)
-   from table lookup as forwarding address preference.  RSVP-TE is given
-   a better route preference than SR-MPLS.  RSVP-TE tunnel to PE3 cannot
-   be established.
+
+
+
+
+
+
+
+
+
 
 
 
@@ -561,6 +561,34 @@ Vroonen & Litkowski       Expires 17 April 2026                [Page 10]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
+
+                        +-----+     (M=5)
+                P/m  -- | PE1 |----------------+
+                        +-----+                |
+                                               |
+                                               |
+                        +-----+     (M=10)   +----+     (M=5)    +-----+
+                P/m  -- | PE2 |--------------| P1 |--------------| PE4 |
+                        +-----+              +----+              +-----+
+                                               |
+                                               |
+                        +-----+     (M=15)     |
+                P/m  -- | PE3 |----------------+
+                        +-----+
+
+                                 Figure 4
+
+   In Figure 4, a prefix P/m is reachable by PE4 from PE1, PE2, PE3
+   (with respectively NEXT_HOP N1, N2 and N3).  Considering that the
+   network is a BGP free core, traffic must be tunneled between edge
+   devices.  Traffic destined to P/m is of high bandwidth and requires
+   traffic-engineering to spread the traffic across the available links
+   of the core.  RSVP-TE is used to provide traffic-engineering MPLS
+   tunnels.  SR-MPLS is also used to provide best-effort reachability.
+   BGP is configured to use the route preference (or administrative
+   distance) from table lookup as forwarding address preference.  RSVP-
+   TE is given a better route preference than SR-MPLS.  RSVP-TE tunnel
+   to PE3 cannot be established.
 
                  +========+==========+============+======+
                  | Prefix | Protocol | Preference | Cost |
@@ -573,6 +601,22 @@ Internet-Draft        BGP nh selection enhancements         October 2025
                  +--------+----------+------------+------+
 
                      Table 4: IPv4 routing table of PE4
+
+
+
+
+
+
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 17 April 2026                [Page 11]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
                  +========+==========+============+======+
                  | Prefix | Protocol | Preference | Cost |
@@ -599,25 +643,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    ingress tunnel table.  PE4 will end-up with the following information
    from the MPLS ingress tunnel table to compare the path:
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Vroonen & Litkowski       Expires 17 April 2026                [Page 11]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
      P/m
        Path1:
          from PE1, NH=N1
@@ -632,7 +657,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
          cost 20, forwarding address preference 110
 
 
-                                  Figure 4
+                                  Figure 5
 
    PE4 will check the forwarding address preference of the paths.  PE4
    will not consider the paths received from PE3 because the forwarding
@@ -640,6 +665,14 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    the internal costs between paths from PE1 and PE2 as they have the
    same preference and path from PE2 will be elected as best because it
    has the lowest cost.
+
+
+
+
+Vroonen & Litkowski       Expires 17 April 2026                [Page 12]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
 6.  IANA Considerations
 
@@ -667,13 +700,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
               DOI 10.17487/RFC4271, January 2006,
               <https://www.rfc-editor.org/info/rfc4271>.
 
-
-
-Vroonen & Litkowski       Expires 17 April 2026                [Page 12]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/info/rfc8174>.
@@ -688,6 +714,21 @@ Internet-Draft        BGP nh selection enhancements         October 2025
               "The BGP Tunnel Encapsulation Attribute", RFC 9012,
               DOI 10.17487/RFC9012, April 2021,
               <https://www.rfc-editor.org/info/rfc9012>.
+
+   [RFC9246]  van Brandenburg, R., Leung, K., and P. Sorber, "URI
+              Signing for Content Delivery Network Interconnection
+              (CDNI)", RFC 9246, DOI 10.17487/RFC9246, June 2022,
+              <https://www.rfc-editor.org/info/rfc9246>.
+
+
+
+
+
+
+Vroonen & Litkowski       Expires 17 April 2026                [Page 13]
+
+Internet-Draft        BGP nh selection enhancements         October 2025
+
 
    [RFC9252]  Dawra, G., Ed., Talaulikar, K., Ed., Raszuk, R., Decraene,
               B., Zhuang, S., and J. Rabadan, "BGP Overlay Services
@@ -724,50 +765,9 @@ Authors' Addresses
    Email: ovroonen@cisco.com
 
 
-
-Vroonen & Litkowski       Expires 17 April 2026                [Page 13]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
-
    Stephane Litkowski
    Cisco
    Email: slitkows@cisco.com
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
