@@ -49,7 +49,7 @@
       <t>
       BGP [RFC4271] has originally been designed to carry IPv4 routing information over the Internet. 
       IP routing being “hop-by-hop” in nature, [RFC4271] defines the NEXT_HOP attribute which purpose is to carry the address of the next router to send the IP packet to. 
-      In BGP, the next-hop may not be a directly connected router, hence, when evaluating paths, BGP needs to figure out if the next-hop is resolvable and, when needed, needs to figure out what is the internal cost to reach this next-hop. 
+      In BGP, the next-hop may not be a directly connected router, hence, when evaluating paths, a BGP speaker must determine if the next-hop is resolvable and, if so, determine the internal cost to reach it. 
       </t>
       <t>
       The incremental use of tunneling technologies to carry traffic between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6…) may violate the assumption that the address carried in the NEXT_HOP attribute is representative of the actual forwarding next-hop.
@@ -80,11 +80,11 @@
         BGP <xref target="RFC4271"/> is designed to exchange network reachability information between routing domains. 
         A BGP update typically contains a prefix and a set of path attributes, including the well-known mandatory NEXT_HOP attribute. 
         The receiving router uses this next-hop address to determine the egress point for traffic destined for the advertised prefix. 
-        The assumption is the next hop address represents the next router from a traffic forwarding point of view.
+        The underlying assumption is that the next-hop address represents the actual next router in the data plane's forwarding path.
         </t>
         <t>
         <xref target="RFC4271"/> Section 9.1.2.1 defines the route resolvability condition: a BGP route is considered unresolvable if the BGP speaker’s routing table has no route matching the BGP route next-hop address.
-        As per <xref target="RFC4271"/> Section 9.1.2.2 e), when comparing paths received via internal BGP (IBGP), the Routing Table metric associated to the BGP route next-hop address is used to figure out the best path.
+        As per <xref target="RFC4271"/> Section 9.1.2.2 e), when comparing paths received via internal BGP (IBGP), the metric to reach the BGP route's next-hop address, found in the routing table, is used to determine the best path.
         </t>
         <figure anchor="base-bgp-nh-selection">
         <name></name>
@@ -109,8 +109,7 @@
         </figure>
         <t>
         In <xref target="base-bgp-nh-selection"/>, RTR3 receives prefix P/m from RTR1 and RTR2 (IBGP peers) with NEXT_HOP N1 and N2. RTR3 resolves N1 with a cost of 1 and N2 with a cost of 2.
-        Based on <xref target="RFC4271"/> procedures, RTR3 will select the path with the lowest cost to the NEXT_HOP address, so RTR3 will select the path received from RTR1. In this example, the
-        path used to resolve N1 and N2 reflects the actual forwarding path which makes the best path decision done by RTR3 accurate.
+        Based on <xref target="RFC4271"/> procedures, RTR3 will select the path with the lowest cost to the NEXT_HOP address, so RTR3 will select the path received from RTR1. In this example, the path used to resolve N1 and N2 reflects the actual forwarding path, which makes RTR3's best-path decision accurate.
         </t>
         <t>
         This document describes cases where the NEXT_HOP attribute used in the BGP update is not representative of the actual forwarding path. 
@@ -171,8 +170,7 @@
             <li>Costs D in brackets represents cost of latency-based metric</li>
         </ul>
         <t>
-        If PE3 performs the next-hop resolution solely based on the BGP NEXT_HOP attribute, it will not verify that an SR policy (C1, Nx) exists and is up before using it.
-        It may also pick the wrong best path by considering the cost to the NEXT_HOP address instead of the cost of the SR policy. The best path considering SR-policy (C1, Nx) cost is via PE2, while the best path considering IGP metric is via PE1.
+        If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP attribute, it will not verify the existence and state of a corresponding SR Policy (C1, Nx). Consequently, it may select a suboptimal path by considering the cost to the NEXT_HOP address instead of the cost of the SR policy. The best path considering SR-policy (C1, Nx) cost is via PE2, while the best path considering IGP metric is via PE1.
         </t>
         <table>
         <name>IPv4 routing table of PE3</name>
@@ -200,7 +198,7 @@
         This situation has multiple drawbacks:
         </t>
         <ul>
-          <li>Cost of the two BGP paths are not comparable which makes the comparison inaccurate: PE1 path uses a cost based on latency while cost of path from PE2 uses IGP metric.</li>
+          <li>The costs of the two BGP paths are not directly comparable, which makes the comparison inaccurate: the path via PE1 uses a latency-based cost, while the fallback path via PE2 uses an IGP metric.</li>
           <li>Using a path without an SR-policy may violate the intent of the service, especially if there is an alternate path (from PE1) that fulfills the intent.</li>
         </ul>
         <t>
@@ -262,7 +260,7 @@
     <section title="Modification of the BGP route selection process">
         <section title="Forwarding address">
             <t>
-            This document defines the forwarding address as the IP address of the next hop that will be used to forward packets. The forwarding address may come from the NEXT_HOP or a different address which has been signaled in a different attribute along with the path.
+            This document defines the forwarding address as the IP address of the next hop that will be used to forward packets. The forwarding address may come from the NEXT_HOP or a different address that has been signaled in another attribute associated with the path.
             </t>
             <t>
             The following data already defined in BGP standards SHOULD be considered as forwarding addresses:
@@ -298,7 +296,7 @@
         Reusing the example defined in <xref target="mpls-path-use-case"/>, if we consider an IPv4 unicast BGP service carried over a BGP free-core, the BGP NEXT_HOP must be reachable through a tunnel to allow the end-to-end packet delivery.
         Such a case cannot be derived from the BGP update context and BGP must be configured to resolve the NEXT_HOP only through tunnels (of any or specific types). 
         Similarly, when aggregate routes are present in the routing table, user may want to prevent the forwarding address (which is a specific route) to be resolved over the aggregate routes. A resolution filter based on prefix/mask can be done to avoid such resolution to be valid.
-        An implementation MAY provide a set of configuration options to resolution table and/or resolution filters.
+        An implementation MAY provide configuration options to control the resolution table and/or resolution filters.
         </t>
         </section>
 
