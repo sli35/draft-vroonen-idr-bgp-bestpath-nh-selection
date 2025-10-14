@@ -93,17 +93,17 @@
                     AS 1
       <--------------------------------->
 
-          +------+ 
+           +------+ 
     P/m  --| RTR1 |----------------+
-          +------+       (M=1)    |
-                                  |
+           +------+       (M=1)    |
+                                   |
                               +------+
                               | RTR3 |
                               +------+
-                                  |
-          +------+       (M=2)    |
+                                   |
+           +------+       (M=2)    |
     P/m  --| RTR2 |----------------+
-          +------+ 
+           +------+ 
           ]]>
         </artwork>
         </figure>
@@ -141,20 +141,23 @@
         <t>
         When using SR Policies <xref target="RFC9256"/>, the BGP NEXT_HOP attribute may not accurately represent the actual forwarding path.
         </t>
-        <figure anchor="next-hop-not-used-for-fwding">
-          <name>Next hop not used for forwarding</name>
+        <figure anchor="next-hop-not-used-for-fwding" title="Next hop attribute not used for forwarding">
           <artwork><![CDATA[
+
+                  [D=6]         [D=6]
           +-----+ (M=1) +----+  (M=1)
   P/m  -- | PE1 |-------| P1 |--------+
-          +-----+ [D=6] +----+  [D=6] |
-                                      |
-                                    +-----+
-                                    | PE3 |
-                                    +-----+
-                                       |
-          +-----+ [D=2] +----+  [D=2]  |
+          +-----+       +----+        |
+        (M=1)\      _______|          |
+       [D=14] \    /                +-----+
+               +-----------+        | PE3 |
+                 /         |        +-----+
+         (M=5)  /          |           |
+         [D=14]/           |           |
+          +-----+       +----+         |
   P/m  -- | PE2 |-------| P2 |---------+
           +-----+ (M=5) +----+  (M=5)
+                  [D=2]         [D=2]
           ]]>
           </artwork>
         </figure>
@@ -177,7 +180,7 @@
         </thead>
         <tbody>
         <tr><td>N1</td><td>P1</td><td>2</td></tr>
-        <tr><td>N2</td><td>P2</td><td>10</td></tr>
+        <tr><td>N2</td><td>P1</td><td>6</td></tr>
         </tbody>
         </table>
         <table>
@@ -192,9 +195,15 @@
         </table>
         <t>
         Considering that PE3 may take into account the cost of the SR policy and then picks up the path from PE2 as best. 
-        If the SR Policy (C1, N2) goes down, and considering that color C1 is using CO-flag equal to 00, path from PE2 is authorized to use IGP path to next-hop N2 (fallback to IGP path). 
-        This may not be desirable as the intent of the service is to use a low-latency path.
-        It may be suitable then for PE3 to prefer other paths that uses a color 1 based SR policy or even exclude any path that does not meet the color 1 requirement.
+        If the SR Policy (C1, N2) is down or not present, and considering that color C1 is using CO-flag equal to 00, path from PE2 is authorized to use IGP path to next-hop N2 (fallback to IGP path via P1 with cost=6) as there is no policy (C1, N2) available.
+        This situation has multiple drawbacks:
+        </t>
+        <ul>
+          <li>Cost of the two BGP paths are not comparable which makes the comparison inaccurate: PE1 path uses a cost based on latency while cost of path from PE2 uses IGP metric.</li>
+          <li>Using a path without an SR-policy may violate the intent of the service, especially if there is an alternate path (from PE1) that fulfills the intent.</li>
+        </ul>
+        <t>
+        It may be desirable for PE3 to prefer the path from PE1 that satisfies color 1 or even exclude any path that does not meet the color 1 requirement.
         </t>
       </section>
       <section title="SRv6 services">
@@ -220,9 +229,9 @@
         </thead>
         <tbody>
         <tr><td>N1</td><td>P1</td><td>2</td></tr>
-        <tr><td>N2</td><td>P2</td><td>10</td></tr>
+        <tr><td>N2</td><td>P1</td><td>6</td></tr>
         <tr><td>L1</td><td>P1</td><td>2</td></tr>
-        <tr><td>L2</td><td>P2</td><td>10</td></tr>
+        <tr><td>L2</td><td>P1</td><td>6</td></tr>
         <tr><td>L1_FA</td><td>P1</td><td>12</td></tr>
         <tr><td>L2_FA</td><td>P2</td><td>4</td></tr>
         </tbody>
@@ -239,19 +248,12 @@
         The cost to reach the SID must also be taken into account in this scenario to ensure that the traffic offload works properly.
         </t>
       </section>
-      <section title="MPLS path">
-      <t>
-        When using MPLS, the BGP NEXT_HOP attribute may not be representative of the actual forwarding path.
-        </t>
+      <section anchor="mpls-path-use-case" title="MPLS path">
         <t>
-        In the above figure, an MPLS-based BGP VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.
-        Depending on MPLS label distribution protocol used between routers (LDP, RSVP-TE, SR-MPLS, BGP-LU…), the actual forwarding path to reach P/m may not be the path to reach N1 or N2.
-        The next-hops must be resolved via a tunnel table (e.g.: MPLS forwarding table) instead of the IP routing table.
-        </t>
-        <t>
-        Based on <xref target="RFC4271"/> procedures, PE3 will select the path with the lowest cost to the NEXT_HOP address, so PE3 will select the path received from PE1.
-        This procedures does not take into account that the MPLS services must be resolved via a tunnel table (e.g.: MPLS forwarding table) instead of the IP routing table.
-        By not considering the tunnel table, PE3 may end up selecting a path that is not actually reachable, leading to potential traffic blackholing.
+        In <xref target="next-hop-not-used-for-fwding"/>, a BGP MPLS VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.
+        The existence of a route in PE3's IPv4 routing table to reach N1 or N2 (defined in <xref target="RFC4271"/>) is not sufficient to ensure that traffic can be carried from PE3 to PE1 or PE2.
+        PE3 needs to ensure that there is a tunnel available to reach PE1 or PE2 that can carry MPLS traffic (e.g.: an MPLS Label Switched Path (LSP)).
+        By checking only for the existence of a route in its routing table, PE3 could create a traffic blackhole if there is no tunnel to carry the MPLS VPN traffic.
         </t>
       </section>
     </section>
@@ -280,10 +282,22 @@
             </t>
         </section>
 
-        <section anchor="lookup-in-table" title="Lookup table">
+        <section anchor="lookup-in-table" title="Lookup table and resolution filters">
         <t>
-        When the forwarding address and its context are identified for a BGP route, the implementation must figure out the internal table in which to perform the address look up. 
-        Each implementation has its own set of tables (e.g.: IP routing table, Ingress MPLS tunnel table, …), so each implementation figures out the proper internal table to use based on the forwarding address and the context.
+        When the forwarding address and its context are identified for a BGP route, the implementation may know the required characteristics of the path to be used to resolve the forwarding address.
+        Each implementation has its own way of storing the various types of routes (e.g.: IP, RSVP-TE LSP, LDP LSP, SRv6, SR Policies,...): routes may be separated into different tables or share the same table.
+        </t>
+        <t>
+        Each implementation needs to figure out the proper internal table to use based on the forwarding address/context. When a table contains various types of routes, filtering is required to ensure that the forwarding address is resolved through the required type of route.
+        An example of filter rule could be that the resolved route of the forwarding address should have an MPLS outgoing path, or should be a tunnel (of any type). 
+        Resolution filters allow to constraint the resolution of the forwarding address to specific routes by using any attribute of these routes (source protocol, type of outgoing path,...). 
+        </t>
+        <t>
+        The BGP update may not provide enough context to determine the constraints of the forwarding path.
+        Reusing the example defined in <xref target="mpls-path-use-case"/>, if we consider an IPv4 unicast BGP service carried over a BGP free-core, the BGP NEXT_HOP must be reachable through a tunnel to allow the end-to-end packet delivery.
+        Such a case cannot be derived from the BGP update context and BGP must be configured to resolve the NEXT_HOP only through tunnels (of any or specific types). 
+        Similarly, when aggregate routes are present in the routing table, user may want to prevent the forwarding address (which is a specific route) to be resolved over the aggregate routes. A resolution filter based on prefix/mask can be done to avoid such resolution to be valid.
+        An implementation MAY provide a set of configuration options to resolution table and/or resolution filters.
         </t>
         </section>
 
@@ -300,6 +314,9 @@
             </li>
             <li>
                 When resolving the forwarding address, look up SHOULD be performed in the table identified from the forwarding address and context.
+            </li>
+            <li>
+                If a resolution filter is used, a BGP route is considered unresolvable if the table does not contain a route that satisfies the filter criteria.
             </li>
         </ul>
         </section>
@@ -339,71 +356,69 @@
         </section>
     </section>
 
-    <section title="Examples">
+    <section title="Example">
+      <t>
+      The example below illustrates the logic of forwarding address preference and cost comparison.
+      </t>
+      <t>
+      A prefix P/m is reachable by PE4 from PE1, PE2, PE3 (with respectively NEXT_HOP N1, N2 and N3). Considering that the network is a BGP free core, traffic must be tunneled between edge devices.
+      Traffic destined to P/m is of high bandwidth and requires traffic-engineering to spread the traffic across the available links of the core. RSVP-TE is used to provide traffic-engineering MPLS tunnels.
+      SR-MPLS is also used to provide best-effort reachability. BGP is configured to use the route preference (or administrative distance) from table lookup as forwarding address preference. RSVP-TE is given a better route preference than SR-MPLS. 
+      RSVP-TE tunnel to PE3 cannot be established.
+      </t>
+      <table>
+        <name>IPv4 routing table of PE4</name>
+        <thead>
+        <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>IS-IS</td><td>100</td><td>10</td></tr>
+        <tr><td>N2</td><td>IS-IS</td><td>100</td><td>15</td></tr>
+        <tr><td>N3</td><td>IS-IS</td><td>100</td><td>20</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <name>MPLS ingress tunnel table of PE4</name>
+        <thead>
+        <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>IS-IS SR</td><td>110</td><td>10</td></tr>
+        <tr><td>N1</td><td>RSVP-TE</td><td>250</td><td>1000</td></tr>
+        <tr><td>N2</td><td>IS-IS SR</td><td>110</td><td>15</td></tr>
+        <tr><td>N2</td><td>RSVP-TE</td><td>250</td><td>100</td></tr>
+        <tr><td>N3</td><td>IS-IS SR</td><td>110</td><td>20</td></tr>
+        </tbody>
+      </table>
+      <t>
+      As mentioned in <xref target="lookup-in-table"/>, the case of BGP free-core requires BGP on PE4 to be configured to allow the resolution the NEXT_HOP address through tunnels (of any type).
+      Considering that PE4 maintains a separate table for MPLS ingress tunnels, PE4 will look up for N1, N2, N3 addresses only in this table.
+      PE4 will first check the resolvability of N1, N2 and N3. All are resolvable in the MPLS ingress tunnel table. PE4 will end-up with the following information from the MPLS ingress tunnel table to compare the path:
+      </t>
       <figure>
-          <name>MPLS/SRv6 service example</name>
-          <artwork><![CDATA[
-                   +-----+          (M=1)  
-           P/m  -- | PE1 |----------------+
-                   +-----+          [D=5] |
-                   +-----+ (M=5)          |
-           P/m  -- | PE2 |----------+     |
-                   +-----+ [D=1]    |  +-----+
-                                    +--| IWG |
-                   +-----+ (M=2)    |  +-----+
-           P/m  -- | PE3 |----------+     |
-                   +-----+                |
-                   +-----+          (M=6) |
-           P/m  -- | PE4 |----------------+
-                   +-----+          
-          ]]>
-          </artwork>
-        </figure>
-        <t>
-        In the above figure, IWG is acting as an Inter Working Gateway (IWG) between an SRv6 and an MPLS-based BGP VPN. Let's assume IWG receives prefix P/m from PE1, PE2, PE3 and PE4 with NEXT_HOP N1, N2, N3 and N4 and SRv6 SID S1 and S2.
-        BGP is configured on IWG to use forwarding address preference and forwarding address-based cost for SRv6 services.
-        </t>
-        <ul>
-            <li>SRv6 domain is using flexible algorithm 129 which is using low-latency metric and MPLS domain is using algo 0.</li>
-            <li>Costs M in parentheses represents cost of algo 0 (as defined in <xref target="RFC8665"/> Section 8.5).</li>
-            <li>Costs D in brackets represents cost of flexible algorithm <xref target="RFC9350"/> 129 which is using low-latency metric.</li>
-            <li>PE1, PE2 and IWG are in the SRv6 domain, PE3, PE4 and IWG are in the MPLS domain.</li>
-        </ul>
-        <table>
-        <name>IPv6 routing table of PE3</name>
-        <thead>
-        <tr><th>Prefix</th><th>Cost</th></tr>
-        </thead>
-        <tbody>
-        <tr><td>N1</td><td>1</td></tr>
-        <tr><td>N2</td><td>5</td></tr>
-        <tr><td>L1_FA</td><td>5</td></tr>
-        <tr><td>L2_FA</td><td>1</td></tr>
-        </tbody>
-        </table>
-        <table>
-        <name>IPv4 routing table of PE3</name>
-        <thead>
-        <tr><th>Prefix</th><th>Cost</th></tr>
-        </thead>
-        <tbody>
-        <tr><td>N3</td><td>2</td></tr>
-        <tr><td>N4</td><td>6</td></tr>
-        </tbody>
-        </table>
-        <t>
-        IWG will first check the resolvability of N1, N2, N3 and N4. All are resolvable.
-        Then, IWG will check the forwarding address preference of the paths. Let's assume that the forwarding address preference of SRv6 paths is higher than the one of MPLS paths.
-        N3 and N4 will not be considered because the forwarding address preference of the MPLS path is lower than the SRv6 path.
-        Then, IWG will check the resolvability of S1 and S2. If both paths are resolvable, IWG will compare the internal costs. and then use the path received from PE2 because the cost to reach S2 (1) is lower than the cost to reach S1 (5).
-        </t>
-        <t>
-        If S1 and S2 are not resolvable and no other SRv6 paths are available, IWG will consider the second forwarding address preference, and evaluate those paths.
-        In this case, IWG will compare the cost to reach N3 (2) and N4 (6) and then use the path received from PE3 because the cost to reach N3 (2) is lower than the cost to reach N4 (6).
-        </t>
+      <artwork>
 
+  P/m
+    Path1:
+      from PE1, NH=N1
+      cost 1000, forwarding address preference 250
+
+    Path2:
+      from PE2, NH=N2
+      cost 100, forwarding address preference 250
+
+    Path3:
+      from PE3, NH=NH3
+      cost 20, forwarding address preference 110
+
+      </artwork>
+      </figure>
+      <t>
+      PE4 will check the forwarding address preference of the paths. PE4 will not consider the paths received from PE3 because the forwarding address preference is lower than others.
+      Finally, PE4 will compare the internal costs between paths from PE1 and PE2 as they have the same preference and path from PE2 will be elected as best because it has the lowest cost.
+      </t>
     </section>
-
+    
     <section anchor="IANA">
       <name>IANA Considerations</name>
       <t>This document does not require any IANA actions.</t>
