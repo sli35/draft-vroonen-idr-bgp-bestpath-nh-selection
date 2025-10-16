@@ -164,7 +164,7 @@
         In <xref target="next-hop-not-used-for-fwding"/>, a BGP MPLS VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.
         The existence of a route in PE3's IPv4 routing table to reach N1 or N2 (defined in <xref target="RFC4271"/>) is not sufficient to ensure that traffic can be carried from PE3 to PE1 or PE2.
         PE3 needs to ensure that there is a tunnel available to reach PE1 or PE2 that can carry MPLS traffic (e.g.: an MPLS Label Switched Path (LSP)).
-        By checking only for the existence of a route in its routing table, PE3 could create a traffic drop or misroutinge if there is no tunnel to carry the MPLS VPN traffic.
+        By checking only for the existence of a route in its routing table, PE3 could create a traffic drop or misrouting if there is no tunnel to carry the MPLS VPN traffic.
         </t>
       </section>
       <section title="Segment Routing Traffic Engineering Policy">

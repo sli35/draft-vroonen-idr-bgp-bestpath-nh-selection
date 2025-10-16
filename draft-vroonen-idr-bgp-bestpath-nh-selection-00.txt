@@ -253,7 +253,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    a tunnel available to reach PE1 or PE2 that can carry MPLS traffic
    (e.g.: an MPLS Label Switched Path (LSP)).  By checking only for the
    existence of a route in its routing table, PE3 could create a traffic
-   drop or misroutinge if there is no tunnel to carry the MPLS VPN
+   drop or misrouting if there is no tunnel to carry the MPLS VPN
    traffic.
 
 2.2.  Segment Routing Traffic Engineering Policy
