@@ -86,7 +86,7 @@ Table of Contents
      3.1.  Forwarding address  . . . . . . . . . . . . . . . . . . .   8
      3.2.  Resolution constraints  . . . . . . . . . . . . . . . . .   9
      3.3.  Route resolvability condition . . . . . . . . . . . . . .   9
-     3.4.  Internal cost determination . . . . . . . . . . . . . . .  10
+     3.4.  Internal cost determination . . . . . . . . . . . . . . .   9
      3.5.  Next hop and forwarding address tracking  . . . . . . . .  12
    4.  Example . . . . . . . . . . . . . . . . . . . . . . . . . . .  12
    5.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  15
@@ -114,7 +114,7 @@ Vroonen & Litkowski       Expires 20 April 2026                 [Page 2]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   BGP NEXT_HOP attribute as defined in [RFC4271] and BGP NEXT_HOP filed
+   BGP NEXT_HOP attribute as defined in [RFC4271] and BGP NEXT_HOP field
    in the MP_REACH_NLRI attribute as defined in [RFC4760] are referred
    to as NEXT_HOP attribute in this document.
 
@@ -408,17 +408,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 3.1.  Forwarding address
 
    This document defines the forwarding address as the IP address of the
-   next router to which packets destined for the route are sent.  The
-   forwarding address may come from the NEXT_HOP or a different address
-   which has been signaled in a different attribute along with the path.
+   next router to which packets are sent.  The forwarding address may
+   come from the NEXT_HOP or a different address which has been signaled
+   in a different attribute along with the path.
 
    The following data already defined in BGP standards SHOULD be
    considered as forwarding addresses:
 
    *  The Tunnel Egress Endpoint Sub-TLV contained in Tunnel
       Encapsulation attribute defined in [RFC9012]
-
-   *  The SR Policy <Color, Endpoint> tuple defined in [RFC9256]
 
    *  SRv6 SID Information Sub-TLV contained within L3 or L2 SRv6 SID
       defined in [RFC9252]
@@ -433,13 +431,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    *  The Tunnel Encapsulation attribute defined in [RFC9012]
 
-   *  The Color contained in the SR Policy <Color, Endpoint> tuple
-      defined in [RFC9256]
+   *  The Color extended community defined in [RFC9012]
 
-   *  The SRv6 Locator contained within L3 or L2 SRv6 SID defined in
-      [RFC9252]
+   *  The SRv6 Sub-TLV and Sub-sub-TLV contained within L3 or L2 SRv6
+      SID TLV as defined in [RFC9252] other than the SID itself
 
-
+   Each new BGP extension SHOULD specify if an address carried by the
+   extension must be considered as a forwarding address.  The procedures
+   defined in the next section SHOULD apply for any new forwarding
+   address defined without having to redefine them.
 
 
 
@@ -450,11 +450,6 @@ Vroonen & Litkowski       Expires 20 April 2026                 [Page 8]
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   Each new BGP extension SHOULD specify if an address carried by the
-   extension must be considered as a forwarding address.  The procedures
-   defined in the next section SHOULD apply for any new forwarding
-   address defined without having to redefine them.
-
 3.2.  Resolution constraints
 
    When the forwarding address and its context are identified for a BGP
@@ -462,9 +457,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    the route to be used to resolve the forwarding address.  Depending on
    the type of forwarding address and context, the implementation may
    need to ensure that the forwarding address is resolved through a
-   specific type of route (e.g.: IP, RSVP-TE LSP, LDP LSP, SRv6, SR
-   Policies,...).  This resolution constraint may come from the
-   forwarding context or may be configured locally.
+   specific type of route in a specific table.  This resolution
+   constraint may come from the forwarding context and/or may be
+   configured locally.
 
    In some cases, operator may want to enforce that the forwarding
    address is resolved through a specific type of route.  This can be
@@ -479,7 +474,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    (which is a specific route) to be resolved over the aggregate routes.
    A resolution constraint based on prefix/mask can be done to avoid
    such resolution to be valid.  An implementation MAY provide a set of
-   configuration options to resolution constraints.
+   configuration options for resolution constraints.
 
 3.3.  Route resolvability condition
 
@@ -497,6 +492,11 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    The resolvability check based on the forwarding address MAY be
    enabled through a configuration knob.
 
+3.4.  Internal cost determination
+
+   For a prefix P/m, different BGP paths may use different forwarding
+   addresses and contexts of various types.
+
 
 
 
@@ -505,11 +505,6 @@ Vroonen & Litkowski       Expires 20 April 2026                 [Page 9]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
-
-3.4.  Internal cost determination
-
-   For a prefix P/m, different BGP paths may use different forwarding
-   addresses and contexts of various types.
 
          P/m
              Path1: NH=10.0.0.1 Color: 200
@@ -528,16 +523,15 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    In order to compare the paths, this document introduces the concept
    of forwarding address preference.  The preference is a local
-   numerical value and MUST prefer the lowest value.  This preference
-   MAY be retrieved from the resolution constraints used to resolve the
-   forwarding address or MAY be configured locally.
+   numerical value.  An implementation SHOULD pick the lowest value as
+   the most preferred.
 
    This document updates [RFC4271] Section 9.1.2.2 e) as follows:
 
-   *  Remove from consideration any routes with less preference
-      forwarding address preference.  The forwarding preference of a
-      path is determined by either retrieval from the appropriate table
-      identified in Section 3.2 or by local BGP configuration.
+   *  Remove from consideration any routes with an highest forwarding
+      address preference value.  This preference MAY be retrieved from
+      the resolution lookup of the forwarding address or MAY be
+      configured locally.
 
    *  For remaining paths, the interior cost of a route is determined by
       the metric of the resolving route to the forwarding address
@@ -553,6 +547,12 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    considering lowest preference value as the most preferred one, BGP
    would select Path2 as best.  Path2 and Path4 have the lowest
    preference (10), then Path2 has the lowest internal cost (12).
+
+
+
+
+
+
 
 
 
@@ -644,7 +644,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 3.5.  Next hop and forwarding address tracking
 
-   A BGP speaker MUST track the resolvability of both the NEXT_HOP
+   A BGP speaker SHOULD track the resolvability of both the NEXT_HOP
    attribute and the forwarding address.  If either the NEXT_HOP or the
    forwarding address becomes unresolvable or if the cost to reach
    either the NEXT_HOP or the forwarding address changes, the BGP
@@ -885,8 +885,8 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 Acknowledgements
 
-   The authors would like to acknowledge Serge Krier and Shyam Sethuram
-   for review and comments.
+   The authors would like to acknowledge Ketan Talaulikar, Serge Krier
+   and Shyam Sethuram for review and comments.
 
 Authors' Addresses
 

@@ -72,7 +72,7 @@
         The assumption is the next hop address represents the next router from a traffic forwarding point of view.
         </t>
         <t>
-        BGP NEXT_HOP attribute as defined in <xref target="RFC4271"/> and BGP NEXT_HOP filed in the MP_REACH_NLRI attribute as defined in <xref target="RFC4760"/> are referred to as NEXT_HOP attribute in this document.
+        BGP NEXT_HOP attribute as defined in <xref target="RFC4271"/> and BGP NEXT_HOP field in the MP_REACH_NLRI attribute as defined in <xref target="RFC4760"/> are referred to as NEXT_HOP attribute in this document.
         </t>
         <t>
         <xref target="RFC4271"/> Section 9.1.2.1 defines the route resolvability condition: a BGP route is considered unresolvable if the BGP speaker’s routing table has no route matching the BGP route next-hop address.
@@ -263,14 +263,13 @@
     <section title="Modification of the BGP route selection process">
         <section title="Forwarding address">
             <t>
-            This document defines the forwarding address as the IP address of the next router to which packets destined for the route are sent. The forwarding address may come from the NEXT_HOP or a different address which has been signaled in a different attribute along with the path.
+            This document defines the forwarding address as the IP address of the next router to which packets are sent. The forwarding address may come from the NEXT_HOP or a different address which has been signaled in a different attribute along with the path.
             </t>
             <t>
             The following data already defined in BGP standards SHOULD be considered as forwarding addresses:
             </t>
             <ul>
                 <li>The Tunnel Egress Endpoint Sub-TLV contained in Tunnel Encapsulation attribute defined in <xref target="RFC9012"/></li>
-                <li>The SR Policy &lt;Color, Endpoint&gt; tuple defined in <xref target="RFC9256"/></li>
                 <li>SRv6 SID Information Sub-TLV contained within L3 or L2 SRv6 SID defined in <xref target="RFC9252"/></li>
             </ul>
             <t>
@@ -282,8 +281,8 @@
             </t>
             <ul>
                 <li>The Tunnel Encapsulation attribute defined in <xref target="RFC9012"/></li>
-                <li>The Color contained in the SR Policy &lt;Color, Endpoint&gt; tuple defined in <xref target="RFC9256"/></li>
-                <li>The SRv6 Locator contained within L3 or L2 SRv6 SID defined in <xref target="RFC9252"/></li>
+                <li>The Color extended community defined in <xref target="RFC9012"/></li>
+                <li>The SRv6 Sub-TLV and Sub-sub-TLV contained within L3 or L2 SRv6 SID TLV as defined in <xref target="RFC9252"/> other than the SID itself</li>
             </ul>
             <t>
             Each new BGP extension SHOULD specify if an address carried by the extension must be considered as a forwarding address. The procedures defined in the next section SHOULD apply for any new forwarding address defined without having to redefine them.
@@ -293,8 +292,8 @@
         <section anchor="lookup-in-table" title="Resolution constraints">
         <t>
         When the forwarding address and its context are identified for a BGP route, the implementation may know the required characteristics of the route to be used to resolve the forwarding address.
-        Depending on the type of forwarding address and context, the implementation may need to ensure that the forwarding address is resolved through a specific type of route (e.g.: IP, RSVP-TE LSP, LDP LSP, SRv6, SR Policies,...).
-        This resolution constraint may come from the forwarding context or may be configured locally.
+        Depending on the type of forwarding address and context, the implementation may need to ensure that the forwarding address is resolved through a specific type of route in a specific table.
+        This resolution constraint may come from the forwarding context and/or may be configured locally.
         </t>
         <t>
         In some cases, operator may want to enforce that the forwarding address is resolved through a specific type of route.
@@ -302,7 +301,7 @@
         Reusing the example defined in <xref target="mpls-path-use-case"/>, if we consider an IPv4 unicast BGP service carried over a BGP free-core, the BGP NEXT_HOP must be reachable through a tunnel to allow the end-to-end packet delivery.
         Such a case cannot be derived from the BGP update context and BGP must be configured to resolve the NEXT_HOP only through tunnels (of any or specific types). 
         Similarly, when aggregate routes are present in the routing table, user may want to prevent the forwarding address (which is a specific route) to be resolved over the aggregate routes. A resolution constraint based on prefix/mask can be done to avoid such resolution to be valid.
-        An implementation MAY provide a set of configuration options to resolution constraints.
+        An implementation MAY provide a set of configuration options for resolution constraints.
         </t>
         </section>
         <section title="Route resolvability condition">
@@ -341,15 +340,14 @@
         Costs retrieved from different types of forwarding addresses or contexts may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
         </t>
         <t>
-        In order to compare the paths, this document introduces the concept of forwarding address preference. The preference is a local numerical value and MUST prefer the lowest value.
-        This preference MAY be retrieved from the resolution constraints used to resolve the forwarding address or MAY be configured locally.
+        In order to compare the paths, this document introduces the concept of forwarding address preference. The preference is a local numerical value. An implementation SHOULD pick the lowest value as the most preferred.
         </t>
         <t>
         This document updates <xref target="RFC4271"/> Section 9.1.2.2 e) as follows:
         </t>
         <ul>
             <li>
-            Remove from consideration any routes with less preference forwarding address preference. The forwarding preference of a path is determined by either retrieval from the appropriate table identified in <xref target="lookup-in-table"/> or by local BGP configuration.
+            Remove from consideration any routes with an highest forwarding address preference value. This preference MAY be retrieved from the resolution lookup of the forwarding address or MAY be configured locally.
             </li>
             <li>
             For remaining paths, the interior cost of a route is determined by the metric of the resolving route to the forwarding address applying the resolution constraints defined in <xref target="lookup-in-table"/>. If the forwarding address for a route is reachable, but no cost can be determined, the cost SHOULD be set by default to the maximum allowed cost.
@@ -426,7 +424,7 @@
         </section>
         <section title="Next hop and forwarding address tracking" anchor="address-tracking">
         <t>
-        A BGP speaker MUST track the resolvability of both the NEXT_HOP attribute and the forwarding address. If either the NEXT_HOP or the forwarding address becomes unresolvable or if the cost to reach either the NEXT_HOP or the forwarding address changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or forwarding address.
+        A BGP speaker SHOULD track the resolvability of both the NEXT_HOP attribute and the forwarding address. If either the NEXT_HOP or the forwarding address becomes unresolvable or if the cost to reach either the NEXT_HOP or the forwarding address changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or forwarding address.
         This tracking MUST be done for all paths, including the best path and non-best paths.
         </t>
         </section>
@@ -558,7 +556,7 @@
     <section anchor="Acknowledgements" numbered="false">
       <name>Acknowledgements</name>
       <t>
-      The authors would like to acknowledge Serge Krier and Shyam Sethuram for review and comments.
+      The authors would like to acknowledge Ketan Talaulikar, Serge Krier and Shyam Sethuram for review and comments.
       </t>
     </section>
     
