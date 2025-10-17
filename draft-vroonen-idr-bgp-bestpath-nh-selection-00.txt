@@ -5,8 +5,8 @@
 Interdomain Working Group                                O. Vroonen, Ed.
 Internet-Draft                                              S. Litkowski
 Updates: 4271 (if approved)                                        Cisco
-Intended status: Standards Track                         16 October 2025
-Expires: 19 April 2026
+Intended status: Standards Track                         17 October 2025
+Expires: 20 April 2026
 
 
              BGP best path next-hop selection enhancements
@@ -53,12 +53,12 @@ Status of This Memo
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 1]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 1]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
-   This Internet-Draft will expire on 19 April 2026.
+   This Internet-Draft will expire on 20 April 2026.
 
 Copyright Notice
 
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 2]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 2]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -165,7 +165,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 3]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 3]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -221,7 +221,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 4]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 4]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -245,16 +245,16 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
             Figure 2: Next hop attribute not used for forwarding
 
-   In Figure 2, a BGP MPLS VPN is deployed over PEs.  Let's assume PE3
-   receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.  The
-   existence of a route in PE3's IPv4 routing table to reach N1 or N2
-   (defined in [RFC4271]) is not sufficient to ensure that traffic can
-   be carried from PE3 to PE1 or PE2.  PE3 needs to ensure that there is
-   a tunnel available to reach PE1 or PE2 that can carry MPLS traffic
-   (e.g.: an MPLS Label Switched Path (LSP)).  By checking only for the
-   existence of a route in its routing table, PE3 could create a traffic
-   drop or misrouting if there is no tunnel to carry the MPLS VPN
-   traffic.
+   In Figure 2, a BGP MPLS VPN (as defined in [RFC4364]) is deployed
+   over PEs.  Let's assume PE3 receives prefix P/m from PE1 and PE2 with
+   NEXT_HOP N1 and N2.  The existence of a route in PE3's IPv4 routing
+   table to reach N1 or N2 (defined in [RFC4271]) is not sufficient to
+   ensure that traffic can be carried from PE3 to PE1 or PE2.  PE3 needs
+   to ensure that there is a tunnel available to reach PE1 or PE2 that
+   can carry MPLS traffic (e.g.: an MPLS Label Switched Path (LSP)).  By
+   checking only for the existence of a route in its routing table, PE3
+   could create a traffic drop or misrouting if there is no tunnel to
+   carry the MPLS VPN traffic.
 
 2.2.  Segment Routing Traffic Engineering Policy
 
@@ -277,7 +277,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 5]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 5]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -324,8 +324,8 @@ Internet-Draft        BGP nh selection enhancements         October 2025
       fulfills the intent.
 
    It may be desirable for PE3 to prefer the path from PE1 that
-   satisfies color 1 or even exclude any path that does not meet the
-   color 1 requirement.
+   satisfies color C1 or even exclude any path that does not meet the
+   color C1 requirement.
 
 
 
@@ -333,7 +333,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 6]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 6]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -389,7 +389,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 7]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 7]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -445,7 +445,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 8]
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 8]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -468,19 +468,18 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    In some cases, operator may want to enforce that the forwarding
    address is resolved through a specific type of route.  This can be
-   achieved by configuring the implementation to apply the necessary
-   resolution constraints.  Reusing the example defined in Section 2.1,
-   if we consider an IPv4 unicast BGP service carried over a BGP free-
-   core, the BGP NEXT_HOP must be reachable through a tunnel to allow
-   the end-to-end packet delivery.  Such a case cannot be derived from
-   the BGP update context and BGP must be configured to resolve the
-   NEXT_HOP only through tunnels (of any or specific types).  Similarly,
-   when aggregate routes are present in the routing table, user may want
-   to prevent the forwarding address (which is a specific route) to be
-   resolved over the aggregate routes.  A resolution constraint based on
-   prefix/mask can be done to avoid such resolution to be valid.  An
-   implementation MAY provide a set of configuration options to
-   resolution constraints.
+   achieved by configuring a local resolution constraint.  Reusing the
+   example defined in Section 2.1, if we consider an IPv4 unicast BGP
+   service carried over a BGP free-core, the BGP NEXT_HOP must be
+   reachable through a tunnel to allow the end-to-end packet delivery.
+   Such a case cannot be derived from the BGP update context and BGP
+   must be configured to resolve the NEXT_HOP only through tunnels (of
+   any or specific types).  Similarly, when aggregate routes are present
+   in the routing table, user may want to prevent the forwarding address
+   (which is a specific route) to be resolved over the aggregate routes.
+   A resolution constraint based on prefix/mask can be done to avoid
+   such resolution to be valid.  An implementation MAY provide a set of
+   configuration options to resolution constraints.
 
 3.3.  Route resolvability condition
 
@@ -501,7 +500,8 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                 [Page 9]
+
+Vroonen & Litkowski       Expires 20 April 2026                 [Page 9]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -550,28 +550,28 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    be enabled through a configuration knob.
 
    With the example above and the internal tables defined below, and
-   considering highest preference value as the most preferred one, BGP
-   would select Path2 as best.  Path2 and Path4 have the highest
-   preference (100), then Path2 has the lowest internal cost (12).
+   considering lowest preference value as the most preferred one, BGP
+   would select Path2 as best.  Path2 and Path4 have the lowest
+   preference (10), then Path2 has the lowest internal cost (12).
 
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 10]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 10]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
 
          P/m
              Path1: NH=10.0.0.1 Color: 200,
-                    preference 10 (from table), cost 1001
+                    preference 100 (from table), cost 1001
              Path2: NH=2001::2 SRv6-SID: cafe:0:2:e002::,
-                    preference 100 (from BGP), cost 12
+                    preference 10 (from BGP), cost 12
              Path3: NH=10.0.0.3
                     Tunnel-encap(L2TPv3, endpoint: 10.0.0.3, sessID: 1),
-                    preference 1 (from BGP), cost max
+                    preference 1000 (from BGP), cost max
              Path4: NH=2001::4 SRv6-SID: cafe:0:4:e002::,
-                    preference 100 (from BGP), cost 14
+                    preference 10 (from BGP), cost 14
 
                                 Figure 4
 
@@ -613,7 +613,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 11]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 11]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -629,14 +629,14 @@ Internet-Draft        BGP nh selection enhancements         October 2025
       +==========================+==================================+
       | Type                     | Preference                       |
       +==========================+==================================+
-      | MPLS LSP (any signaling) | 10                               |
+      | MPLS LSP (any signaling) | 100                              |
       +==========================+==================================+
       | MPLS RSVP-TE LSP         | 50                               |
       +==========================+==================================+
-      | SRv6 SID                 | 100                              |
+      | SRv6 SID                 | 10                               |
       +==========================+==================================+
       | Default                  | use value from table lookup, use |
-      |                          | 1 if table provided no value     |
+      |                          | 1000 if table provided no value  |
       +==========================+==================================+
 
           Table 7: BGP forwarding address preference configuration
@@ -669,7 +669,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 12]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 12]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -725,7 +725,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 13]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 13]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -781,7 +781,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 14]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 14]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -837,7 +837,7 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 15]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 15]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -893,7 +893,7 @@ Authors' Addresses
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 16]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 16]
 
 Internet-Draft        BGP nh selection enhancements         October 2025
 
@@ -949,4 +949,4 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 19 April 2026                [Page 17]
+Vroonen & Litkowski       Expires 20 April 2026                [Page 17]

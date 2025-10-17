@@ -161,7 +161,7 @@
           </artwork>
         </figure>
         <t>
-        In <xref target="next-hop-not-used-for-fwding"/>, a BGP MPLS VPN is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.
+        In <xref target="next-hop-not-used-for-fwding"/>, a BGP MPLS VPN (as defined in <xref target="RFC4364"/>) is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.
         The existence of a route in PE3's IPv4 routing table to reach N1 or N2 (defined in <xref target="RFC4271"/>) is not sufficient to ensure that traffic can be carried from PE3 to PE1 or PE2.
         PE3 needs to ensure that there is a tunnel available to reach PE1 or PE2 that can carry MPLS traffic (e.g.: an MPLS Label Switched Path (LSP)).
         By checking only for the existence of a route in its routing table, PE3 could create a traffic drop or misrouting if there is no tunnel to carry the MPLS VPN traffic.
@@ -213,7 +213,7 @@
           <li>Using a path without an SR-policy may violate the intent of the service, especially if there is an alternate path (from PE1) that fulfills the intent.</li>
         </ul>
         <t>
-        It may be desirable for PE3 to prefer the path from PE1 that satisfies color 1 or even exclude any path that does not meet the color 1 requirement.
+        It may be desirable for PE3 to prefer the path from PE1 that satisfies color C1 or even exclude any path that does not meet the color C1 requirement.
         </t>
       </section>
       <section title="SRv6 services">
@@ -298,7 +298,7 @@
         </t>
         <t>
         In some cases, operator may want to enforce that the forwarding address is resolved through a specific type of route.
-        This can be achieved by configuring the implementation to apply the necessary resolution constraints.
+        This can be achieved by configuring a local resolution constraint.
         Reusing the example defined in <xref target="mpls-path-use-case"/>, if we consider an IPv4 unicast BGP service carried over a BGP free-core, the BGP NEXT_HOP must be reachable through a tunnel to allow the end-to-end packet delivery.
         Such a case cannot be derived from the BGP update context and BGP must be configured to resolve the NEXT_HOP only through tunnels (of any or specific types). 
         Similarly, when aggregate routes are present in the routing table, user may want to prevent the forwarding address (which is a specific route) to be resolved over the aggregate routes. A resolution constraint based on prefix/mask can be done to avoid such resolution to be valid.
@@ -359,21 +359,21 @@
         Using forwarding preference and forwarding address-based cost SHOULD be enabled through a configuration knob.
         </t>
         <t>
-        With the example above and the internal tables defined below, and considering highest preference value as the most preferred one, BGP would select Path2 as best. Path2 and Path4 have the highest preference (100), then Path2 has the lowest internal cost (12).
+        With the example above and the internal tables defined below, and considering lowest preference value as the most preferred one, BGP would select Path2 as best. Path2 and Path4 have the lowest preference (10), then Path2 has the lowest internal cost (12).
 
         </t>
         <figure>
             <artwork><![CDATA[
         P/m
             Path1: NH=10.0.0.1 Color: 200, 
-                   preference 10 (from table), cost 1001
+                   preference 100 (from table), cost 1001
             Path2: NH=2001::2 SRv6-SID: cafe:0:2:e002::,  
-                   preference 100 (from BGP), cost 12
+                   preference 10 (from BGP), cost 12
             Path3: NH=10.0.0.3 
                    Tunnel-encap(L2TPv3, endpoint: 10.0.0.3, sessID: 1),
-                   preference 1 (from BGP), cost max
+                   preference 1000 (from BGP), cost max
             Path4: NH=2001::4 SRv6-SID: cafe:0:4:e002::, 
-                   preference 100 (from BGP), cost 14
+                   preference 10 (from BGP), cost 14
             ]]></artwork>
         </figure>
         <table>
@@ -414,10 +414,10 @@
             <tr><th>Type</th><th>Preference</th></tr>
           </thead>
           <tbody>
-            <tr><th>MPLS LSP (any signaling)</th><th>10</th></tr>
+            <tr><th>MPLS LSP (any signaling)</th><th>100</th></tr>
             <tr><th>MPLS RSVP-TE LSP</th><th>50</th></tr>
-            <tr><th>SRv6 SID</th><th>100</th></tr>
-            <tr><th>Default</th><th>use value from table lookup, use 1 if table provided no value</th></tr>
+            <tr><th>SRv6 SID</th><th>10</th></tr>
+            <tr><th>Default</th><th>use value from table lookup, use 1000 if table provided no value</th></tr>
           </tbody>
         </table>
         <t>
