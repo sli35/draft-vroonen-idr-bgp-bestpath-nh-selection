@@ -19,9 +19,8 @@ Abstract
    nature, [RFC4271] defines the NEXT_HOP attribute which purpose is to
    carry the address of the next router to send the IP packet to.  In
    BGP, the next-hop may not be a directly connected router, hence, when
-   evaluating paths, BGP needs to figure out if the next-hop is
-   resolvable and, when needed, needs to figure out what is the internal
-   cost to reach this next-hop.
+   evaluating paths, a BGP speaker must determine if the next-hop is
+   resolvable and, if so, determine the internal cost to reach it.
 
    The incremental use of tunneling technologies to carry traffic
    between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6…) may violate the
@@ -50,6 +49,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
+   This Internet-Draft will expire on 17 April 2026.
 
 
 
@@ -104,8 +104,9 @@ Table of Contents
    a prefix and a set of path attributes, including the well-known
    mandatory NEXT_HOP attribute.  The receiving router uses this next-
    hop address to determine the egress point for traffic destined for
-   the advertised prefix.  The assumption is the next hop address
-   represents the next router from a traffic forwarding point of view.
+   the advertised prefix.  The underlying assumption is that the next-
+   hop address represents the actual next router in the data plane's
+   forwarding path.
 
 
 
@@ -122,8 +123,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    a BGP route is considered unresolvable if the BGP speaker’s routing
    table has no route matching the BGP route next-hop address.  As per
    [RFC4271] Section 9.1.2.2 e), when comparing paths received via
-   internal BGP (IBGP), the Routing Table metric associated to the BGP
-   route next-hop address is used to figure out the best path.
+   internal BGP (IBGP), the metric to reach the BGP route's next-hop
+   address, found in the routing table, is used to determine the best
+   path.
 
                        AS 1
          <--------------------------------->
@@ -148,8 +150,11 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    with a cost of 2.  Based on [RFC4271] procedures, RTR3 will select
    the path with the lowest cost to the NEXT_HOP address, so RTR3 will
    select the path received from RTR1.  In this example, the path used
-   to resolve N1 and N2 reflects the actual forwarding path which makes
-   the best path decision done by RTR3 accurate.
+   to resolve N1 and N2 reflects the actual forwarding path, which makes
+   RTR3's best-path decision accurate.
+
+
+
 
    This document describes cases where the NEXT_HOP attribute used in
    the BGP update is not representative of the actual forwarding path.
@@ -315,9 +320,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    P1 with cost=6) as there is no policy (C1, N2) available.  This
    situation has multiple drawbacks:
 
-   *  Cost of the two BGP paths are not comparable which makes the
-      comparison inaccurate: PE1 path uses a cost based on latency while
-      cost of path from PE2 uses IGP metric.
+   *  The costs of the two BGP paths are not directly comparable, which
+      makes the comparison inaccurate: the path via PE1 uses a latency-
+      based cost, while the fallback path via PE2 uses an IGP metric.
 
    *  Using a path without an SR-policy may violate the intent of the
       service, especially if there is an alternate path (from PE1) that
