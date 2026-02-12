@@ -5,8 +5,8 @@
 Interdomain Working Group                                O. Vroonen, Ed.
 Internet-Draft                                              S. Litkowski
 Updates: 4271 (if approved)                                        Cisco
-Intended status: Standards Track                         17 October 2025
-Expires: 20 April 2026
+Intended status: Standards Track                        12 February 2025
+Expires: 16 August 2025
 
 
              BGP best path next-hop selection enhancements
@@ -49,16 +49,14 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 17 April 2026.
+   This Internet-Draft will expire on 16 August 2025.
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 1]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 1]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
-
-   This Internet-Draft will expire on 20 April 2026.
 
 Copyright Notice
 
@@ -89,13 +87,14 @@ Table of Contents
      3.4.  Internal cost determination . . . . . . . . . . . . . . .   9
      3.5.  Next hop and forwarding address tracking  . . . . . . . .  12
    4.  Example . . . . . . . . . . . . . . . . . . . . . . . . . . .  12
-   5.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  15
-   6.  Security Considerations . . . . . . . . . . . . . . . . . . .  15
-   7.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  15
-     7.1.  Normative References  . . . . . . . . . . . . . . . . . .  15
-     7.2.  Informative References  . . . . . . . . . . . . . . . . .  16
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  16
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  16
+   5.  Operational Considerations  . . . . . . . . . . . . . . . . .  15
+   6.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  15
+   7.  Security Considerations . . . . . . . . . . . . . . . . . . .  15
+   8.  References  . . . . . . . . . . . . . . . . . . . . . . . . .  15
+     8.1.  Normative References  . . . . . . . . . . . . . . . . . .  15
+     8.2.  Informative References  . . . . . . . . . . . . . . . . .  17
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  17
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  17
 
 1.  Introduction
 
@@ -110,9 +109,9 @@ Table of Contents
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 2]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 2]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
    BGP NEXT_HOP attribute as defined in [RFC4271] and BGP NEXT_HOP field
@@ -153,9 +152,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    to resolve N1 and N2 reflects the actual forwarding path, which makes
    RTR3's best-path decision accurate.
 
-
-
-
    This document describes cases where the NEXT_HOP attribute used in
    the BGP update is not representative of the actual forwarding path.
    In these cases, the resolvability condition may fail in its goal and
@@ -169,10 +165,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 3]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 3]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
    *  [I-D.ietf-idr-bgp-bestpath-selection-criteria] addresses the case
@@ -226,9 +221,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 4]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 4]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
                      [D=6]         [D=6]
@@ -275,21 +270,21 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
    *  Costs D in brackets represents cost of latency-based metric
 
-   If PE3 performs the next-hop resolution solely based on the BGP
-   NEXT_HOP attribute, it will not verify that an SR policy (C1, Nx)
-   exists and is up before using it.  It may also pick the wrong best
-   path by considering the cost to the NEXT_HOP address instead of the
+   If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP
+   attribute, it will not verify the existence and state of a
+   corresponding SR Policy (C1, Nx).  Consequently, it may select a
+   suboptimal path by considering the cost to the NEXT_HOP address
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 5]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 5]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
-   cost of the SR policy.  The best path considering SR-policy (C1, Nx)
-   cost is via PE2, while the best path considering IGP metric is via
-   PE1.
+   instead of the cost of the SR policy.  The best path considering SR-
+   policy (C1, Nx) cost is via PE2, while the best path considering IGP
+   metric is via PE1.
 
                        +========+==========+======+
                        | Prefix | Next hop | Cost |
@@ -338,9 +333,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 6]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 6]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 2.3.  SRv6 services
@@ -394,9 +389,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 7]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 7]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
    The problem of path suboptimality may also happen with algorithm 0,
@@ -450,9 +445,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 8]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 8]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 3.2.  Resolution constraints
@@ -506,9 +501,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                 [Page 9]
+Vroonen & Litkowski      Expires 16 August 2025                 [Page 9]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
          P/m
@@ -562,9 +557,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                [Page 10]
+Vroonen & Litkowski      Expires 16 August 2025                [Page 10]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
          P/m
@@ -618,9 +613,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                [Page 11]
+Vroonen & Litkowski      Expires 16 August 2025                [Page 11]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
                    +=============+============+========+
@@ -674,9 +669,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                [Page 12]
+Vroonen & Litkowski      Expires 16 August 2025                [Page 12]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
                         +-----+     (M=5)
@@ -730,9 +725,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                [Page 13]
+Vroonen & Litkowski      Expires 16 August 2025                [Page 13]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
                  +========+==========+============+======+
@@ -786,9 +781,9 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-Vroonen & Litkowski       Expires 20 April 2026                [Page 14]
+Vroonen & Litkowski      Expires 16 August 2025                [Page 14]
 
-Internet-Draft        BGP nh selection enhancements         October 2025
+Internet-Draft        BGP nh selection enhancements        February 2025
 
 
    As mentioned in Section 3.5, if the RSVP-TE tunnel to PE2 goes down,
@@ -796,11 +791,34 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    from PE1 as best.  This is also true if the cost of RSVP-TE LSP to
    reach N1 changes and becomes lower than the cost of LSP to reach N2.
 
-5.  IANA Considerations
+5.  Operational Considerations
+
+   The modifications to the BGP best path selection process defined in
+   this document rely on the availability of specific next-hop
+   resolution costs (e.g., tunnel metrics, delay, or bandwidth) that
+   differ from standard IGP metrics.
+
+   Network operators MUST ensure consistent configuration of these
+   selection criteria across all BGP speakers within the same Autonomous
+   System (or Route Reflector cluster).  If a subset of routers in the
+   network performs best-path selection based on the procedures in this
+   document (e.g., preferring a path with lower delay), while other
+   routers use standard BGP procedures (preferring the lowest IGP metric
+   to the BGP next-hop), a persistent forwarding loop MAY occur.
+
+   For example, Router A (compliant) may select a path via Router B
+   because it has a lower delay path.  Router B (non-compliant or
+   misconfigured) may select a path back to Router A because it has a
+   lower IGP metric.  To mitigate this, operators SHOULD enable these
+   procedures simultaneously on all routers in the relevant domain or
+   ensure that the preferred topology is loop-free under both metric
+   types.
+
+6.  IANA Considerations
 
    This document does not require any IANA actions.
 
-6.  Security Considerations
+7.  Security Considerations
 
    This document modifies BGP route selection process by using data
    other than the next-hop address to perform the resolvability check as
@@ -808,14 +826,21 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    consideration compared to using the existing NEXT_HOP attribute
    defined in [RFC4271].
 
-7.  References
+8.  References
 
-7.1.  Normative References
+8.1.  Normative References
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
+
+
+
+Vroonen & Litkowski      Expires 16 August 2025                [Page 15]
+
+Internet-Draft        BGP nh selection enhancements        February 2025
+
 
    [RFC4271]  Rekhter, Y., Ed., Li, T., Ed., and S. Hares, Ed., "A
               Border Gateway Protocol 4 (BGP-4)", RFC 4271,
@@ -834,18 +859,6 @@ Internet-Draft        BGP nh selection enhancements         October 2025
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
               May 2017, <https://www.rfc-editor.org/info/rfc8174>.
-
-
-
-
-
-
-
-
-Vroonen & Litkowski       Expires 20 April 2026                [Page 15]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
 
    [RFC8665]  Psenak, P., Ed., Previdi, S., Ed., Filsfils, C., Gredler,
               H., Shakir, R., Henderickx, W., and J. Tantsura, "OSPF
@@ -874,12 +887,23 @@ Internet-Draft        BGP nh selection enhancements         October 2025
               RFC 9256, DOI 10.17487/RFC9256, July 2022,
               <https://www.rfc-editor.org/info/rfc9256>.
 
+
+
+
+
+
+
+Vroonen & Litkowski      Expires 16 August 2025                [Page 16]
+
+Internet-Draft        BGP nh selection enhancements        February 2025
+
+
    [RFC9350]  Psenak, P., Ed., Hegde, S., Filsfils, C., Talaulikar, K.,
               and A. Gulko, "IGP Flexible Algorithm", RFC 9350,
               DOI 10.17487/RFC9350, February 2023,
               <https://www.rfc-editor.org/info/rfc9350>.
 
-7.2.  Informative References
+8.2.  Informative References
 
    [I-D.ietf-idr-bgp-bestpath-selection-criteria]
               Asati, R., "BGP Bestpath Selection Criteria Enhancement",
@@ -894,14 +918,6 @@ Acknowledgements
    and Shyam Sethuram for review and comments.
 
 Authors' Addresses
-
-
-
-
-Vroonen & Litkowski       Expires 20 April 2026                [Page 16]
-
-Internet-Draft        BGP nh selection enhancements         October 2025
-
 
    Olivier Vroonen (editor)
    Cisco
@@ -933,25 +949,4 @@ Internet-Draft        BGP nh selection enhancements         October 2025
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Vroonen & Litkowski       Expires 20 April 2026                [Page 17]
+Vroonen & Litkowski      Expires 16 August 2025                [Page 17]

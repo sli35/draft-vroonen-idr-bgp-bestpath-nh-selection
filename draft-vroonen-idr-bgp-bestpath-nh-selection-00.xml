@@ -510,6 +510,19 @@
       As mentioned in <xref target="address-tracking"/>, if the RSVP-TE tunnel to PE2 goes down, PE4 will re-evaluate the best path selection and will select the path from PE1 as best. This is also true if the cost of RSVP-TE LSP to reach N1 changes and becomes lower than the cost of LSP to reach N2.
       </t>
     </section>
+
+    <section anchor="Operational">
+      <name>Operational Considerations</name>
+      <t>
+      The modifications to the BGP best path selection process defined in this document rely on the availability of specific next-hop resolution costs (e.g., tunnel metrics, delay, or bandwidth) that differ from standard IGP metrics.
+      </t>
+      <t>
+      Network operators MUST ensure consistent configuration of these selection criteria across all BGP speakers within the same Autonomous System (or Route Reflector cluster). If a subset of routers in the network performs best-path selection based on the procedures in this document (e.g., preferring a path with lower delay), while other routers use standard BGP procedures (preferring the lowest IGP metric to the BGP next-hop), a persistent forwarding loop MAY occur.
+      </t>
+      <t>
+      For example, Router A (compliant) may select a path via Router B because it has a lower delay path. Router B (non-compliant or misconfigured) may select a path back to Router A because it has a lower IGP metric. To mitigate this, operators SHOULD enable these procedures simultaneously on all routers in the relevant domain or ensure that the preferred topology is loop-free under both metric types.
+      </t>
+    </section>
     
     <section anchor="IANA">
       <name>IANA Considerations</name>
