@@ -5,8 +5,8 @@
 Interdomain Working Group                                O. Vroonen, Ed.
 Internet-Draft                                              S. Litkowski
 Updates: 4271 (if approved)                                        Cisco
-Intended status: Standards Track                        13 February 2025
-Expires: 17 August 2025
+Intended status: Standards Track                        13 February 2026
+Expires: 17 August 2026
 
 
              BGP best path next-hop selection enhancements
@@ -49,18 +49,18 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 17 August 2025.
+   This Internet-Draft will expire on 17 August 2026.
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 1]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 1]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 Copyright Notice
 
-   Copyright (c) 2025 IETF Trust and the persons identified as the
+   Copyright (c) 2026 IETF Trust and the persons identified as the
    document authors.  All rights reserved.
 
    This document is subject to BCP 78 and the IETF Trust's Legal
@@ -109,9 +109,9 @@ Table of Contents
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 2]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 2]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
    BGP NEXT_HOP attribute as defined in [RFC4271] and BGP NEXT_HOP field
@@ -165,9 +165,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 3]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 3]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
    *  [I-D.ietf-idr-bgp-bestpath-selection-criteria] addresses the case
@@ -221,9 +221,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 4]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 4]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
                      [D=6]         [D=6]
@@ -277,9 +277,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 5]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 5]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
    instead of the cost of the SR policy.  The best path considering SR-
@@ -333,9 +333,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 6]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 6]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 2.3.  SRv6 services
@@ -389,9 +389,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 7]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 7]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
    The problem of path suboptimality may also happen with algorithm 0,
@@ -445,9 +445,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 8]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 8]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 3.2.  Resolution constraints
@@ -501,9 +501,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                 [Page 9]
+Vroonen & Litkowski      Expires 17 August 2026                 [Page 9]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
          P/m
@@ -557,9 +557,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 10]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 10]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
          P/m
@@ -613,9 +613,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 11]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 11]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
                    +=============+============+========+
@@ -669,9 +669,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 12]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 12]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
                         +-----+     (M=5)
@@ -725,9 +725,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 13]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 13]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
                  +========+==========+============+======+
@@ -781,9 +781,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 14]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 14]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
    As mentioned in Section 3.5, if the RSVP-TE tunnel to PE2 goes down,
@@ -837,9 +837,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 15]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 15]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
    [RFC4271]  Rekhter, Y., Ed., Li, T., Ed., and S. Hares, Ed., "A
@@ -893,9 +893,9 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 16]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 16]
 
-Internet-Draft        BGP nh selection enhancements        February 2025
+Internet-Draft        BGP nh selection enhancements        February 2026
 
 
    [RFC9350]  Psenak, P., Ed., Hegde, S., Filsfils, C., Talaulikar, K.,
@@ -949,4 +949,4 @@ Authors' Addresses
 
 
 
-Vroonen & Litkowski      Expires 17 August 2025                [Page 17]
+Vroonen & Litkowski      Expires 17 August 2026                [Page 17]
