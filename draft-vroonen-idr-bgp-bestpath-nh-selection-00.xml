@@ -514,13 +514,13 @@
     <section anchor="Operational">
       <name>Operational Considerations</name>
       <t>
-      The modifications to the BGP best path selection process defined in this document rely on the availability of specific next-hop resolution costs (e.g., tunnel metrics, delay, or bandwidth) that differ from standard IGP metrics.
+      The mechanisms described in this document are typically deployed in environments utilizing tunneling technologies (such as MPLS or SRv6). In these scenarios, the BGP path selection determines the specific Forwarding Address (e.g., an SRv6 SID or MPLS label) used for encapsulation.
       </t>
       <t>
-      Network operators MUST ensure consistent configuration of these selection criteria across all BGP speakers within the same Autonomous System (or Route Reflector cluster). If a subset of routers in the network performs best-path selection based on the procedures in this document (e.g., preferring a path with lower delay), while other routers use standard BGP procedures (preferring the lowest IGP metric to the BGP next-hop), a persistent forwarding loop MAY occur.
+      Because the traffic is encapsulated at the ingress router, intermediate nodes forward packets based solely on the outer transport header rather than the inner destination. Consequently, the specific BGP selection criteria are enforced only at the ingress, preventing forwarding loops that might otherwise arise from inconsistent policy decisions on intermediate nodes.
       </t>
       <t>
-      For example, Router A (compliant) may select a path via Router B because it has a lower delay path. Router B (non-compliant or misconfigured) may select a path back to Router A because it has a lower IGP metric. To mitigate this, operators SHOULD enable these procedures simultaneously on all routers in the relevant domain or ensure that the preferred topology is loop-free under both metric types.
+      However, to ensure predictable routing behavior and simplify troubleshooting, it is recommended that network operators maintain a consistent configuration of these selection criteria across all BGP speakers within the same administrative domain (or Route Reflector cluster).
       </t>
     </section>
     
