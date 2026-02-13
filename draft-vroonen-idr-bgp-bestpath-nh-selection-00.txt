@@ -793,24 +793,26 @@ Internet-Draft        BGP nh selection enhancements        February 2025
 
 5.  Operational Considerations
 
+   This document defines mechanisms that modify the BGP best path
+   selection process defined in [RFC4271].  Consequently, the potential
+   impact on routing loops needs to be analyzed.
+
    The mechanisms described in this document are typically deployed in
    environments utilizing tunneling technologies (such as MPLS or SRv6).
    In these scenarios, the BGP path selection determines the specific
-   Forwarding Address (e.g., an SRv6 SID or MPLS label) used for
-   encapsulation.
+   Forwarding Address used for encapsulation.
 
-   Because the traffic is encapsulated at the ingress router,
-   intermediate nodes forward packets based solely on the outer
-   transport header rather than the inner destination.  Consequently,
-   the specific BGP selection criteria are enforced only at the ingress,
-   preventing forwarding loops that might otherwise arise from
-   inconsistent policy decisions on intermediate nodes.
+   When the traffic is encapsulated at the ingress router, intermediate
+   nodes forward packets based solely on the outer transport header
+   rather than the inner destination.  Consequently, the specific BGP
+   selection criteria are enforced only at the ingress, preventing
+   forwarding loops that might otherwise arise from inconsistent policy
+   decisions on intermediate nodes.
 
    However, to ensure predictable routing behavior and simplify
    troubleshooting, it is recommended that network operators maintain a
    consistent configuration of these selection criteria across all BGP
-   speakers within the same administrative domain (or Route Reflector
-   cluster).
+   speakers within the same administrative domain.
 
 6.  IANA Considerations
 
@@ -832,8 +834,6 @@ Internet-Draft        BGP nh selection enhancements        February 2025
               Requirement Levels", BCP 14, RFC 2119,
               DOI 10.17487/RFC2119, March 1997,
               <https://www.rfc-editor.org/info/rfc2119>.
-
-
 
 
 
