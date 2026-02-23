@@ -523,7 +523,37 @@
       When the traffic is encapsulated at the ingress router, intermediate nodes forward packets based solely on the outer transport header rather than the inner destination. Consequently, the specific BGP selection criteria are enforced only at the ingress, preventing forwarding loops that might otherwise arise from inconsistent policy decisions on intermediate nodes.
       </t>
       <t>
-      However, to ensure predictable routing behavior and simplify troubleshooting, it is recommended that network operators maintain a consistent configuration of these selection criteria across all BGP speakers within the same administrative domain.
+      To illustrate this loop prevention, consider the following topology where PE1, PE2, and PE3 provide reachability to Prefix X.
+      </t>
+      <figure anchor="fig_loop_prevention">
+        <name>Loop Prevention via Encapsulation</name>
+        <artwork type="ascii-art">
+                          +-------+
+                        /|  PE2  |--- Prefix X
+              (Low Delay) |       |
+                        / +-------+
+                      /
+    +-------+    +-------+
+    |  PE1  |----|   P   |
+    +-------+    +-------+
+    (Ingress)          \
+                        \ +-------+
+              (Low IGP)   |  PE3  |--- Prefix X
+                          |       |
+                          +-------+
+        </artwork>
+      </figure>
+      <t>
+      Assume PE1 is configured with the mechanisms defined in this document and selects PE2 as the BGP next-hop for Prefix X to optimize for low delay. Router P is a transit node and uses standard BGP procedures, preferring PE3 due to a lower IGP metric. 
+      </t>
+      <t>
+      In a hop-by-hop IP routing paradigm, PE1 would forward a bare IP packet to P. Router P would perform a lookup on the inner destination IP (Prefix X) and deflect the packet toward PE3, directly contradicting PE1's decision and potentially causing a loop if PE3 also had a conflicting policy. 
+      </t>
+      <t>
+      However, in a tunneling paradigm, PE1 encapsulates the packet with an outer header (e.g., an SRv6 SID or MPLS label) targeting PE2's Forwarding Address. When the packet arrives at Router P, P only evaluates the outer header and forwards the packet along the IGP shortest path to PE2. Router P's BGP policy regarding Prefix X is never invoked for in-flight traffic.
+      </t>
+      <t>
+      Nevertheless, to ensure predictable routing behavior and simplify troubleshooting, it is recommended that network operators maintain a consistent configuration of these selection criteria across all BGP speakers within the same administrative domain.
       </t>
     </section>
     
