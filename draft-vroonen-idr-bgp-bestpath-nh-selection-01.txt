@@ -5,12 +5,13 @@
 Interdomain Working Group                                O. Vroonen, Ed.
 Internet-Draft                                              S. Litkowski
 Updates: 4271 (if approved)                                        Cisco
-Intended status: Standards Track                        23 February 2026
-Expires: 27 August 2026
+Intended status: Standards Track                               K. Chandi
+Expires: 3 September 2026                                    Bell Canada
+                                                            2 March 2026
 
 
              BGP best path next-hop selection enhancements
-             draft-vroonen-idr-bgp-bestpath-nh-selection-00
+             draft-vroonen-idr-bgp-bestpath-nh-selection-01
 
 Abstract
 
@@ -49,14 +50,15 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 27 August 2026.
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 1]
+Vroonen, et al.         Expires 3 September 2026                [Page 1]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
+
+   This Internet-Draft will expire on 3 September 2026.
 
 Copyright Notice
 
@@ -104,15 +106,16 @@ Table of Contents
    mandatory NEXT_HOP attribute.  The receiving router uses this next-
    hop address to determine the egress point for traffic destined for
    the advertised prefix.  The underlying assumption is that the next-
+
+
+
+Vroonen, et al.         Expires 3 September 2026                [Page 2]
+
+Internet-Draft        BGP nh selection enhancements           March 2026
+
+
    hop address represents the actual next router in the data plane's
    forwarding path.
-
-
-
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 2]
-
-Internet-Draft        BGP nh selection enhancements        February 2026
-
 
    BGP NEXT_HOP attribute as defined in [RFC4271] and BGP NEXT_HOP field
    in the MP_REACH_NLRI attribute as defined in [RFC4760] are referred
@@ -158,17 +161,17 @@ Internet-Draft        BGP nh selection enhancements        February 2026
    path selection may be done on inaccurate criteria leading to
    suboptimal routing, network congestion, traffic drop or misrouting...
 
+
+
+
+
+Vroonen, et al.         Expires 3 September 2026                [Page 3]
+
+Internet-Draft        BGP nh selection enhancements           March 2026
+
+
    These use cases are not new and may have been partially addressed by
    IETF standards or drafts, some references are provided below:
-
-
-
-
-
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 3]
-
-Internet-Draft        BGP nh selection enhancements        February 2026
-
 
    *  [I-D.ietf-idr-bgp-bestpath-selection-criteria] addresses the case
       of MPLS networks and proposes a modification of the route
@@ -218,12 +221,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-
-
-
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 4]
+Vroonen, et al.         Expires 3 September 2026                [Page 4]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
                      [D=6]         [D=6]
@@ -277,9 +277,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 5]
+Vroonen, et al.         Expires 3 September 2026                [Page 5]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
    instead of the cost of the SR policy.  The best path considering SR-
@@ -333,9 +333,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 6]
+Vroonen, et al.         Expires 3 September 2026                [Page 6]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 2.3.  SRv6 services
@@ -389,9 +389,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 7]
+Vroonen, et al.         Expires 3 September 2026                [Page 7]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
    The problem of path suboptimality may also happen with algorithm 0,
@@ -445,9 +445,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 8]
+Vroonen, et al.         Expires 3 September 2026                [Page 8]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 3.2.  Resolution constraints
@@ -501,9 +501,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                 [Page 9]
+Vroonen, et al.         Expires 3 September 2026                [Page 9]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
          P/m
@@ -557,9 +557,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 10]
+Vroonen, et al.         Expires 3 September 2026               [Page 10]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
          P/m
@@ -613,9 +613,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 11]
+Vroonen, et al.         Expires 3 September 2026               [Page 11]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
                    +=============+============+========+
@@ -669,9 +669,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 12]
+Vroonen, et al.         Expires 3 September 2026               [Page 12]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
                         +-----+     (M=5)
@@ -725,9 +725,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 13]
+Vroonen, et al.         Expires 3 September 2026               [Page 13]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
                  +========+==========+============+======+
@@ -781,9 +781,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 14]
+Vroonen, et al.         Expires 3 September 2026               [Page 14]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
    As mentioned in Section 3.5, if the RSVP-TE tunnel to PE2 goes down,
@@ -837,9 +837,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 15]
+Vroonen, et al.         Expires 3 September 2026               [Page 15]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
    In a hop-by-hop IP routing paradigm, PE1 would forward a bare IP
@@ -893,9 +893,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 16]
+Vroonen, et al.         Expires 3 September 2026               [Page 16]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
    [RFC4760]  Bates, T., Chandra, R., Katz, D., and Y. Rekhter,
@@ -949,9 +949,9 @@ Internet-Draft        BGP nh selection enhancements        February 2026
 
 
 
-Vroonen & Litkowski      Expires 27 August 2026                [Page 17]
+Vroonen, et al.         Expires 3 September 2026               [Page 17]
 
-Internet-Draft        BGP nh selection enhancements        February 2026
+Internet-Draft        BGP nh selection enhancements           March 2026
 
 
    [I-D.ietf-idr-bgp-bestpath-selection-criteria]
@@ -978,6 +978,9 @@ Authors' Addresses
    Email: slitkows@cisco.com
 
 
+   Kandhla Chandi
+   Bell Canada
+   Email: kandhla.chandi@bell.ca
 
 
 
@@ -1002,7 +1005,4 @@ Authors' Addresses
 
 
 
-
-
-
-Vroonen & Litkowski      Expires 27 August 2026                [Page 18]
+Vroonen, et al.         Expires 3 September 2026               [Page 18]

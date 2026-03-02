@@ -13,7 +13,7 @@
 <rfc
   xmlns:xi="http://www.w3.org/2001/XInclude"
   category="std"
-  docName="draft-vroonen-idr-bgp-bestpath-nh-selection-00"
+  docName="draft-vroonen-idr-bgp-bestpath-nh-selection-01"
   ipr="trust200902"
   obsoletes=""
   updates="4271"
@@ -24,7 +24,7 @@
   <front>
     <title abbrev="BGP nh selection enhancements">BGP best path next-hop selection enhancements</title>
 
-    <seriesInfo name="Internet-Draft" value="draft-vroonen-idr-bgp-bestpath-nh-selection-00"/>
+    <seriesInfo name="Internet-Draft" value="draft-vroonen-idr-bgp-bestpath-nh-selection-01"/>
 
     <author fullname="Olivier Vroonen" initials="O." role="editor" surname="Vroonen">
       <organization>Cisco</organization>
@@ -36,6 +36,12 @@
       <organization>Cisco</organization>
       <address>
         <email>slitkows@cisco.com</email>
+      </address>
+    </author>
+    <author fullname="Kandhla Chandi" initials="K." surname="Chandi">
+      <organization>Bell Canada</organization>
+      <address>
+        <email>kandhla.chandi@bell.ca</email>
       </address>
     </author>
     <date year="2026"/>
