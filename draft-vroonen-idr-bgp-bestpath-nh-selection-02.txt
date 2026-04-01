@@ -6,34 +6,34 @@ Interdomain Working Group                                O. Vroonen, Ed.
 Internet-Draft                                              S. Litkowski
 Updates: 4271 (if approved)                                        Cisco
 Intended status: Standards Track                               K. Chandi
-Expires: 3 September 2026                                    Bell Canada
-                                                            2 March 2026
+Expires: 3 October 2026                                      Bell Canada
+                                                            1 April 2026
 
 
              BGP best path next-hop selection enhancements
-             draft-vroonen-idr-bgp-bestpath-nh-selection-01
+             draft-vroonen-idr-bgp-bestpath-nh-selection-02
 
 Abstract
 
    BGP [RFC4271] has originally been designed to carry IPv4 routing
    information over the Internet.  IP routing being "hop-by-hop" in
-   nature, [RFC4271] defines the NEXT_HOP attribute which purpose is to
-   carry the address of the next router to send the IP packet to.  In
-   BGP, the next-hop may not be a directly connected router, hence, when
-   evaluating paths, a BGP speaker must determine if the next-hop is
-   resolvable and, if so, determine the internal cost to reach it.
+   nature, NEXT_HOP which purpose is to carry the address of the next
+   router to send the IP packet to.  In BGP, the next-hop may not be a
+   directly connected router, hence, when evaluating paths, a BGP
+   speaker must determine if the next-hop is resolvable and, if so,
+   determine the internal cost to reach it.
 
    The incremental use of tunneling technologies to carry traffic
    between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6...) may violate the
-   assumption that the address carried in the NEXT_HOP attribute is
-   representative of the actual forwarding next-hop.  These technologies
-   decouple the BGP control-plane's view of the next-hop from the data-
-   plane's actual forwarding endpoint.  This document describes the
-   problems that arise from this decoupling.  These problems include
-   sub-optimal path selection, incorrect resolvability tracking of the
-   forwarding path leading to traffic drop or misrouting, and others.
-   This document proposes some modification of BGP path selection
-   procedures to accommodate these use cases.
+   assumption that the address carried in the NEXT_HOP is representative
+   of the actual forwarding next-hop.  These technologies decouple the
+   BGP control-plane's view of the next-hop from the data-plane's actual
+   forwarding endpoint.  This document describes the problems that arise
+   from this decoupling.  These problems include sub-optimal path
+   selection, incorrect resolvability tracking of the forwarding path
+   leading to traffic drop or misrouting, and others.  This document
+   proposes some modification of BGP path selection procedures to
+   accommodate these use cases.
 
 Status of This Memo
 
@@ -53,12 +53,12 @@ Status of This Memo
 
 
 
-Vroonen, et al.         Expires 3 September 2026                [Page 1]
+Vroonen, et al.          Expires 3 October 2026                 [Page 1]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
-   This Internet-Draft will expire on 3 September 2026.
+   This Internet-Draft will expire on 3 October 2026.
 
 Copyright Notice
 
@@ -79,14 +79,14 @@ Table of Contents
    1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   2
      1.1.  Requirements Language . . . . . . . . . . . . . . . . . .   4
    2.  Use cases . . . . . . . . . . . . . . . . . . . . . . . . . .   4
-     2.1.  MPLS path . . . . . . . . . . . . . . . . . . . . . . . .   4
+     2.1.  Unicast over a BGP-free core  . . . . . . . . . . . . . .   4
      2.2.  Segment Routing Traffic Engineering Policy  . . . . . . .   5
      2.3.  SRv6 services . . . . . . . . . . . . . . . . . . . . . .   7
    3.  Modification of the BGP route selection process . . . . . . .   8
      3.1.  Forwarding address  . . . . . . . . . . . . . . . . . . .   8
      3.2.  Resolution constraints  . . . . . . . . . . . . . . . . .   9
      3.3.  Route resolvability condition . . . . . . . . . . . . . .   9
-     3.4.  Internal cost determination . . . . . . . . . . . . . . .   9
+     3.4.  Internal cost determination . . . . . . . . . . . . . . .  10
      3.5.  Next hop and forwarding address tracking  . . . . . . . .  12
    4.  Example . . . . . . . . . . . . . . . . . . . . . . . . . . .  12
    5.  Operational Considerations  . . . . . . . . . . . . . . . . .  15
@@ -102,24 +102,19 @@ Table of Contents
 
    BGP [RFC4271] is designed to exchange network reachability
    information between routing domains.  A BGP update typically contains
-   a prefix and a set of path attributes, including the well-known
-   mandatory NEXT_HOP attribute.  The receiving router uses this next-
-   hop address to determine the egress point for traffic destined for
-   the advertised prefix.  The underlying assumption is that the next-
+   a prefix and a set of path attributes, including NEXT_HOP.  The
+   receiving router uses this next-hop address to determine the egress
+   point for traffic destined for the advertised prefix.  The underlying
+   assumption is that the next-hop address represents the actual next
 
 
 
-Vroonen, et al.         Expires 3 September 2026                [Page 2]
+Vroonen, et al.          Expires 3 October 2026                 [Page 2]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
-   hop address represents the actual next router in the data plane's
-   forwarding path.
-
-   BGP NEXT_HOP attribute as defined in [RFC4271] and BGP NEXT_HOP field
-   in the MP_REACH_NLRI attribute as defined in [RFC4760] are referred
-   to as NEXT_HOP attribute in this document.
+   router in the data plane's forwarding path.
 
    [RFC4271] Section 9.1.2.1 defines the route resolvability condition:
    a BGP route is considered unresolvable if the BGP speaker's routing
@@ -155,23 +150,25 @@ Internet-Draft        BGP nh selection enhancements           March 2026
    to resolve N1 and N2 reflects the actual forwarding path, which makes
    RTR3's best-path decision accurate.
 
-   This document describes cases where the NEXT_HOP attribute used in
-   the BGP update is not representative of the actual forwarding path.
-   In these cases, the resolvability condition may fail in its goal and
-   path selection may be done on inaccurate criteria leading to
-   suboptimal routing, network congestion, traffic drop or misrouting...
-
-
-
-
-
-Vroonen, et al.         Expires 3 September 2026                [Page 3]
-
-Internet-Draft        BGP nh selection enhancements           March 2026
-
+   This document describes cases where the NEXT_HOP used in the BGP
+   update is not representative of the actual forwarding path.  In these
+   cases, the resolvability condition may fail in its goal and path
+   selection may be done on inaccurate criteria leading to suboptimal
+   routing, network congestion, traffic drop or misrouting...
 
    These use cases are not new and may have been partially addressed by
    IETF standards or drafts, some references are provided below:
+
+
+
+
+
+
+
+Vroonen, et al.          Expires 3 October 2026                 [Page 3]
+
+Internet-Draft        BGP nh selection enhancements           April 2026
+
 
    *  [I-D.ietf-idr-bgp-bestpath-selection-criteria] addresses the case
       of MPLS networks and proposes a modification of the route
@@ -189,9 +186,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
       the BGP Prefix SID attribute to signal the SID to be used for
       forwarding.  RFC9252 highlights that ingress PE must perform a
       resolvability check for the SRv6 SID in addition to the
-      resolvability check done on the NEXT_HOP attribute.  However, it
-      doesn't take into account that the cost associated with the tunnel
-      may be different from the cost associated with the BGP next-hop.
+      resolvability check done on the NEXT_HOP.  However, it doesn't
+      take into account that the cost associated with the tunnel may be
+      different from the cost associated with the BGP next-hop.
 
    This document defines generic modifications to the BGP decision
    process that can apply to all the use cases.
@@ -206,7 +203,7 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 2.  Use cases
 
-2.1.  MPLS path
+2.1.  Unicast over a BGP-free core
 
 
 
@@ -221,9 +218,12 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026                [Page 4]
+
+
+
+Vroonen, et al.          Expires 3 October 2026                 [Page 4]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
                      [D=6]         [D=6]
@@ -245,8 +245,8 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
             Figure 2: Next hop attribute not used for forwarding
 
-   In Figure 2, a BGP MPLS VPN (as defined in [RFC4364]) is deployed
-   over PEs.  Let's assume PE3 receives prefix P/m from PE1 and PE2 with
+   In Figure 2, an IPv4 unicast service is deployed over a BGP-free MPLS
+   core.  Let's assume PE3 receives prefix P/m from PE1 and PE2 with
    NEXT_HOP N1 and N2.  The existence of a route in PE3's IPv4 routing
    table to reach N1 or N2 (defined in [RFC4271]) is not sufficient to
    ensure that traffic can be carried from PE3 to PE1 or PE2.  PE3 needs
@@ -254,12 +254,12 @@ Internet-Draft        BGP nh selection enhancements           March 2026
    can carry MPLS traffic (e.g.: an MPLS Label Switched Path (LSP)).  By
    checking only for the existence of a route in its routing table, PE3
    could create a traffic drop or misrouting if there is no tunnel to
-   carry the MPLS VPN traffic.
+   carry the IPv4 unicast traffic.
 
 2.2.  Segment Routing Traffic Engineering Policy
 
-   When using SR Policies [RFC9256], the BGP NEXT_HOP attribute may not
-   accurately represent the actual forwarding path.
+   When using SR Policies [RFC9256], the BGP NEXT_HOP may not accurately
+   represent the actual forwarding path.
 
    In Figure 2, a BGP VPN service (as defined in [RFC4364]) is deployed
    between the PEs.  Let's assume PE3 receives prefix P/m from PE1 and
@@ -270,21 +270,24 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
    *  Costs D in brackets represents cost of latency-based metric
 
-   If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP
-   attribute, it will not verify the existence and state of a
-   corresponding SR Policy (C1, Nx).  Consequently, it may select a
-   suboptimal path by considering the cost to the NEXT_HOP address
 
 
 
-Vroonen, et al.         Expires 3 September 2026                [Page 5]
+
+
+
+
+Vroonen, et al.          Expires 3 October 2026                 [Page 5]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
-   instead of the cost of the SR policy.  The best path considering SR-
-   policy (C1, Nx) cost is via PE2, while the best path considering IGP
-   metric is via PE1.
+   If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP,
+   it will not verify the existence and state of a corresponding SR
+   Policy (C1, Nx).  Consequently, it may select a suboptimal path by
+   considering the cost to the NEXT_HOP address instead of the cost of
+   the SR policy.  The best path considering SR-policy (C1, Nx) cost is
+   via PE2, while the best path considering IGP metric is via PE1.
 
                        +========+==========+======+
                        | Prefix | Next hop | Cost |
@@ -330,18 +333,15 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-
-
-
-Vroonen, et al.         Expires 3 September 2026                [Page 6]
+Vroonen, et al.          Expires 3 October 2026                 [Page 6]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
 2.3.  SRv6 services
 
    When using SRv6 services as defined in [RFC9252], the BGP NEXT_HOP
-   attribute may not be representative of the actual forwarding path.
+   may not be representative of the actual forwarding path.
 
    Considering Figure 2, an SRv6-based BGP VPN is deployed between the
    PEs.  PE1 uses locator L1 for algorithm 0 and L1_FA for flexible
@@ -389,9 +389,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026                [Page 7]
+Vroonen, et al.          Expires 3 October 2026                 [Page 7]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
    The problem of path suboptimality may also happen with algorithm 0,
@@ -422,7 +422,7 @@ Internet-Draft        BGP nh selection enhancements           March 2026
       defined in [RFC9252]
 
    Unless a BGP update contains another type of forwarding address, the
-   BGP NEXT_HOP attribute is considered as the forwarding address.
+   BGP NEXT_HOP is considered as the forwarding address.
 
    The forwarding address MAY be complemented by a forwarding context.
    The forwarding context characterizes more the forwarding path to be
@@ -445,9 +445,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026                [Page 8]
+Vroonen, et al.          Expires 3 October 2026                 [Page 8]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
 3.2.  Resolution constraints
@@ -476,12 +476,18 @@ Internet-Draft        BGP nh selection enhancements           March 2026
    such resolution to be valid.  An implementation MAY provide a set of
    configuration options for resolution constraints.
 
+   The "Resolution Scheme" defined in BGP Classful Transport [RFC9832]
+   serves as a practical example of such a resolution constraint.  In
+   BGP-CT, the resolution of a NEXT_HOP is strictly constrained to an
+   ordered set of Transport Route Databases (TRDBs) dictated by the
+   intent (Mapping Community) attached to the route.
+
 3.3.  Route resolvability condition
 
    This document updates [RFC4271] Section 9.1.2.1 as follows:
 
-   *  The route resolvability check for the BGP NEXT_HOP attribute MUST
-      continue to be done.
+   *  The route resolvability check for the BGP NEXT_HOP MUST continue
+      to be done.
 
    *  In addition, the route resolvability criteria SHOULD be performed
       based on the forwarding address.
@@ -492,19 +498,18 @@ Internet-Draft        BGP nh selection enhancements           March 2026
    The resolvability check based on the forwarding address MAY be
    enabled through a configuration knob.
 
+
+
+
+Vroonen, et al.          Expires 3 October 2026                 [Page 9]
+
+Internet-Draft        BGP nh selection enhancements           April 2026
+
+
 3.4.  Internal cost determination
 
    For a prefix P/m, different BGP paths may use different forwarding
    addresses and contexts of various types.
-
-
-
-
-
-Vroonen, et al.         Expires 3 September 2026                [Page 9]
-
-Internet-Draft        BGP nh selection enhancements           March 2026
-
 
          P/m
              Path1: NH=10.0.0.1 Color: 200
@@ -552,14 +557,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-
-
-
-
-
-Vroonen, et al.         Expires 3 September 2026               [Page 10]
+Vroonen, et al.          Expires 3 October 2026                [Page 10]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
          P/m
@@ -613,9 +613,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026               [Page 11]
+Vroonen, et al.          Expires 3 October 2026                [Page 11]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
                    +=============+============+========+
@@ -644,14 +644,13 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 3.5.  Next hop and forwarding address tracking
 
-   A BGP speaker SHOULD track the resolvability of both the NEXT_HOP
-   attribute and the forwarding address.  If either the NEXT_HOP or the
-   forwarding address becomes unresolvable or if the cost to reach
-   either the NEXT_HOP or the forwarding address changes, the BGP
-   speaker MUST re-evaluate the best path selection for all prefixes
-   using the affected NEXT_HOP or forwarding address.  This tracking
-   MUST be done for all paths, including the best path and non-best
-   paths.
+   A BGP speaker SHOULD track the resolvability of both the NEXT_HOP and
+   the forwarding address.  If either the NEXT_HOP or the forwarding
+   address becomes unresolvable or if the cost to reach either the
+   NEXT_HOP or the forwarding address changes, the BGP speaker MUST re-
+   evaluate the best path selection for all prefixes using the affected
+   NEXT_HOP or forwarding address.  This tracking MUST be done for all
+   paths, including the best path and non-best paths.
 
 4.  Example
 
@@ -669,9 +668,10 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026               [Page 12]
+
+Vroonen, et al.          Expires 3 October 2026                [Page 12]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
                         +-----+     (M=5)
@@ -725,9 +725,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026               [Page 13]
+Vroonen, et al.          Expires 3 October 2026                [Page 13]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
                  +========+==========+============+======+
@@ -781,9 +781,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026               [Page 14]
+Vroonen, et al.          Expires 3 October 2026                [Page 14]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
    As mentioned in Section 3.5, if the RSVP-TE tunnel to PE2 goes down,
@@ -837,9 +837,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026               [Page 15]
+Vroonen, et al.          Expires 3 October 2026                [Page 15]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
    In a hop-by-hop IP routing paradigm, PE1 would forward a bare IP
@@ -869,8 +869,8 @@ Internet-Draft        BGP nh selection enhancements           March 2026
    This document modifies BGP route selection process by using data
    other than the next-hop address to perform the resolvability check as
    well as to compute the internal cost.  This does not add any security
-   consideration compared to using the existing NEXT_HOP attribute
-   defined in [RFC4271].
+   consideration compared to using the existing NEXT_HOP defined in
+   [RFC4271].
 
 8.  References
 
@@ -893,9 +893,9 @@ Internet-Draft        BGP nh selection enhancements           March 2026
 
 
 
-Vroonen, et al.         Expires 3 September 2026               [Page 16]
+Vroonen, et al.          Expires 3 October 2026                [Page 16]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
    [RFC4760]  Bates, T., Chandra, R., Katz, D., and Y. Rekhter,
@@ -939,19 +939,19 @@ Internet-Draft        BGP nh selection enhancements           March 2026
               DOI 10.17487/RFC9350, February 2023,
               <https://www.rfc-editor.org/info/rfc9350>.
 
+   [RFC9832]  Vairavakkalai, K., Ed. and N. Venkataraman, Ed., "BGP
+              Classful Transport Planes", RFC 9832,
+              DOI 10.17487/RFC9832, September 2025,
+              <https://www.rfc-editor.org/info/rfc9832>.
+
 8.2.  Informative References
 
 
 
 
-
-
-
-
-
-Vroonen, et al.         Expires 3 September 2026               [Page 17]
+Vroonen, et al.          Expires 3 October 2026                [Page 17]
 
-Internet-Draft        BGP nh selection enhancements           March 2026
+Internet-Draft        BGP nh selection enhancements           April 2026
 
 
    [I-D.ietf-idr-bgp-bestpath-selection-criteria]
@@ -1005,4 +1005,4 @@ Authors' Addresses
 
 
 
-Vroonen, et al.         Expires 3 September 2026               [Page 18]
+Vroonen, et al.          Expires 3 October 2026                [Page 18]
