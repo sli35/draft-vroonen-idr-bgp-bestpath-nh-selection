@@ -305,7 +305,7 @@
         An implementation MAY provide a set of configuration options for resolution constraints.
         </t>
         <t>
-        The "Resolution Scheme" defined in BGP Classful Transport <xref target="RFC9832"/> serves as a practical example of such a resolution constraint. In BGP-CT, the resolution of a NEXT_HOP is strictly constrained to an ordered set of Transport Route Databases (TRDBs) dictated by the intent (Mapping Community) attached to the route.
+        Another example of a resolution constraint is the "Resolution Scheme", defined in BGP Classful Transport <xref target="RFC9832"/>. The "Resolution Scheme" constrains the resolution of the NEXT_HOP to an ordered set of transport classes dictated by the intent (Mapping Community) attached to the route.
         </t>
         </section>
         <section title="Route resolvability condition">
@@ -342,6 +342,9 @@
         </figure>
         <t>
         Costs retrieved from different types of forwarding addresses or contexts may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
+        </t>
+        <t>
+        The issue of comparing costs of paths of various types is not new. In a regular IP routed network (without tunnels) that runs BGP, a prefix P/m may have paths with nexthops reachable through different IGPs or IGP route types, where costs computed by each IGP may use a different reference. While the routing table can tie-break across different protocols or route types for a single prefix using an internal preference (administrative distance) mechanism, this does not help when comparing BGP paths whose nexthops are resolved through different IGPs.
         </t>
         <t>
         In order to compare the paths, this document introduces the concept of forwarding address preference. The preference is a local numerical value. An implementation SHOULD pick the lowest value as the most preferred.
@@ -517,10 +520,99 @@
       </t>
     </section>
 
+    <section title="Example with BGP Classful Transport">
+      <t>
+      This example illustrates the need for forwarding address preference in a BGP Classful Transport (<xref target="RFC9832"/>) deployment, where two paths for a prefix resolve through different Transport Route Databases (TRDBs) within the same Resolution Scheme.
+      </t>
+      <figure anchor="bgp-ct-example">
+      <artwork><![CDATA[
+                      +-----+     (M=5)
+              P/m  -- | PE1 |----------------+
+                      +-----+                |
+                                           +----+     (M=5)    +-----+
+                                           | P1 |--------------| PE3 |
+                                           +----+              +-----+
+                      +-----+     (M=10)    |
+              P/m  -- | PE2 |----------------+
+                      +-----+          
+      ]]></artwork>
+      </figure>
+      <t>
+      In <xref target="bgp-ct-example"/>, PE3 receives a VPN prefix P/m from PE1 and PE2, both advertised with NEXT_HOP N1 and N2 respectively and Mapping Community color:0:100 indicating a "Gold" SLA intent.
+      BGP Classful Transport is deployed and the Resolution Scheme for color:0:100 is configured as [TRDB-Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be resolved first over Gold transport tunnels, with a fallback to best-effort tunnels.
+      </t>
+      <t>
+      Gold RSVP-TE tunnels exist from PE3 to PE1 but not from PE3 to PE2. Best-effort SR-MPLS tunnels exist to both PE1 and PE2. Following <xref target="RFC9832"/> Section 7.8 procedures, the Resolution Scheme resolves the NEXT_HOP of each path independently:
+      </t>
+      <ul>
+        <li>Path1 (NH=N1): N1 is found in TRDB-Gold (RSVP-TE tunnel to PE1). Resolution succeeds in the primary TRDB.</li>
+        <li>Path2 (NH=N2): N2 is not found in TRDB-Gold. Fallback occurs: N2 is found in TRDB-Best-Effort (SR-MPLS tunnel to PE2). Resolution succeeds in the backup TRDB.</li>
+      </ul>
+      <t>
+      Both paths are resolvable, but they resolved through different TRDBs with different characteristics. The Gold tunnel to PE1 has a cost of 1000 (RSVP-TE metric), while the best-effort tunnel to PE2 has a cost of 15 (IGP metric). These costs are not comparable.
+      </t>
+      <table>
+        <name>TRDB-Gold (TC 100) on PE3</name>
+        <thead>
+        <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>RSVP-TE</td><td>50</td><td>1000</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <name>TRDB-Best-Effort (TC 0) on PE3</name>
+        <thead>
+        <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>IS-IS SR</td><td>110</td><td>10</td></tr>
+        <tr><td>N2</td><td>IS-IS SR</td><td>110</td><td>15</td></tr>
+        </tbody>
+      </table>
+      <t>
+      Without the forwarding address preference mechanism, PE3 would simply compare the costs: 1000 (path via PE1, Gold) vs 15 (path via PE2, best-effort), and would select the path via PE2. This is problematic because:
+      </t>
+      <ul>
+        <li>The path via PE2 uses best-effort transport, violating the Gold SLA intent requested by the Mapping Community.</li>
+        <li>The path via PE1, which satisfies the Gold SLA, is discarded solely because the RSVP-TE metric is numerically higher than the IGP metric, even though these values are not comparable.</li>
+      </ul>
+      <t>
+      Using the forwarding address preference, PE3 retrieves the preference value from each TRDB lookup. TRDB-Gold provides a preference of 50, while TRDB-Best-Effort provides a preference of 110. PE3 will first compare the forwarding address preference values and remove from consideration any path with the highest (least preferred) value. Path2 (preference 110) is removed. PE3 selects path1 via PE1, which satisfies the Gold SLA intent.
+      </t>
+      <figure>
+      <artwork>
+
+  P/m
+    Path1:
+      from PE1, NH=N1
+      resolved via TRDB-Gold (RSVP-TE)
+      cost 1000, forwarding address preference 50
+
+    Path2:
+      from PE2, NH=N2
+      resolved via TRDB-Best-Effort (SR-MPLS)
+      cost 15, forwarding address preference 110
+
+    => PE3 selects Path1 (lower preference value = more preferred)
+
+      </artwork>
+      </figure>
+    </section>
+
     <section anchor="Operational">
       <name>Operational Considerations</name>
       <t>
-      This document defines mechanisms that modify the BGP best path selection process defined in [RFC4271]. Consequently, the potential impact on routing loops needs to be analyzed.
+      In most cases, tunnels carry traffic from the ingress to the egress node that advertised the BGP service route, as transit routers are not aware of the BGP service routes. For instance, in SRv6 service cases, the SRv6 encapsulation using the advertised SID as destination carries traffic down to the node that knows about the service route. Determining the internal cost by using the forwarding address (tunnel endpoint, SRv6 SID, ...) makes sense in these cases as it reflects the end-to-end cost.
+      </t>
+      <t>
+      However, there are cases where the tunnel does not terminate on the service egress. One example is a service route advertised with a color allowing for usage of a null endpoint policy. Another example is a service route advertised with a Tunnel Encapsulation attribute using a tunnel endpoint different from the service egress. In such cases, the tail node of the tunnel must have routing entries for the service routes to ensure end-to-end reachability.
+      </t>
+      <t>
+      When determining the internal cost using the forwarding address in these cases, the retrieved cost may not reflect the end-to-end path. However, using the NEXT_HOP address would not necessarily provide a better view: it would still give an inaccurate picture of distances from a traffic forwarding perspective, since the forwarding path does not follow the IGP-routed path. Additionally, operators commonly manipulate the NEXT_HOP through routing policies, so there is no guarantee that the NEXT_HOP address correctly reflects the real egress node. Hence, using the forwarding address in cases where the tunnel tail is not the service egress is not worse compared to using the NEXT_HOP.
+      </t>
+      <t>
+      This document defines mechanisms that modify the BGP best path selection process defined in <xref target="RFC4271"/>. Consequently, the potential impact on routing loops needs to be analyzed.
       </t>
       <t>
       The mechanisms described in this document are typically deployed in environments utilizing tunneling technologies (such as MPLS or SRv6). In these scenarios, the BGP path selection determines the specific Forwarding Address used for encapsulation.
