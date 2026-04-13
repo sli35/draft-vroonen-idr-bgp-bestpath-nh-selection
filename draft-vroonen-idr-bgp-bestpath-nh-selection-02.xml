@@ -541,7 +541,7 @@
       In <xref target="intent-transport-example"/>, PE3 receives a VPN prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2 respectively. An intent-aware transport technology is deployed, requesting "Gold" SLA transport for this prefix. Gold RSVP-TE tunnels exist from PE3 to PE1 but not from PE3 to PE2. Best-effort SR-MPLS tunnels exist to both PE1 and PE2.
       </t>
       <t>
-      In a BGP Classful Transport (<xref target="RFC9832"/>) deployment, the prefix P/m is advertised with Mapping Community color:0:100 indicating the Gold SLA intent. The Resolution Scheme for color:0:100 is configured as [TRDB-Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be resolved first over Gold transport tunnels, with a fallback to best-effort tunnels. Following <xref target="RFC9832"/> Section 7.8 procedures, the Resolution Scheme resolves the NEXT_HOP of each path independently:
+      In a BGP Classful Transport (<xref target="RFC9832"/>) deployment, the prefix P/m is advertised with Mapping Community color:0:100 indicating the Gold SLA intent. The Resolution Scheme for color:0:100 is configured with the following ordered set of Transport Route Databases (TRDBs): [TRDB-Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be resolved first over Gold transport tunnels, with a fallback to best-effort tunnels. Following <xref target="RFC9832"/> Section 7.8 procedures, the Resolution Scheme resolves the NEXT_HOP of each path independently:
       </t>
       <ul>
         <li>Path1 (NH=N1): N1 is found in TRDB-Gold (RSVP-TE tunnel to PE1). Resolution succeeds in the primary TRDB.</li>

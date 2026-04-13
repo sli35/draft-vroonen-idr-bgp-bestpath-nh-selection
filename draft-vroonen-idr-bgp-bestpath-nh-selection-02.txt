@@ -850,11 +850,12 @@ Internet-Draft        BGP nh selection enhancements           April 2026
 
    In a BGP Classful Transport ([RFC9832]) deployment, the prefix P/m is
    advertised with Mapping Community color:0:100 indicating the Gold SLA
-   intent.  The Resolution Scheme for color:0:100 is configured as
-   [TRDB-Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be
-   resolved first over Gold transport tunnels, with a fallback to best-
-   effort tunnels.  Following [RFC9832] Section 7.8 procedures, the
-   Resolution Scheme resolves the NEXT_HOP of each path independently:
+   intent.  The Resolution Scheme for color:0:100 is configured with the
+   following ordered set of Transport Route Databases (TRDBs): [TRDB-
+   Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be resolved
+   first over Gold transport tunnels, with a fallback to best-effort
+   tunnels.  Following [RFC9832] Section 7.8 procedures, the Resolution
+   Scheme resolves the NEXT_HOP of each path independently:
 
    *  Path1 (NH=N1): N1 is found in TRDB-Gold (RSVP-TE tunnel to PE1).
       Resolution succeeds in the primary TRDB.
@@ -888,7 +889,6 @@ Internet-Draft        BGP nh selection enhancements           April 2026
                  +--------+----------+------------+------+
 
                   Table 10: Gold transport tunnels on PE3
-
 
 
 
