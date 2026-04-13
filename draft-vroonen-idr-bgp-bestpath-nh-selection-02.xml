@@ -520,11 +520,11 @@
       </t>
     </section>
 
-    <section title="Example with BGP Classful Transport">
+    <section title="Example with Intent-Aware BGP Transport">
       <t>
-      This example illustrates the need for forwarding address preference in a BGP Classful Transport (<xref target="RFC9832"/>) deployment, where two paths for a prefix resolve through different Transport Route Databases (TRDBs) within the same Resolution Scheme.
+      This example illustrates the need for forwarding address preference when intent-aware BGP transport technologies are deployed. Both BGP Classful Transport (<xref target="RFC9832"/>) and BGP Color-Aware Routing (<xref target="RFC9871"/>) can lead to situations where two paths for a prefix resolve through different transport mechanisms with incomparable costs.
       </t>
-      <figure anchor="bgp-ct-example">
+      <figure anchor="intent-transport-example">
       <artwork><![CDATA[
                       +-----+     (M=5)
               P/m  -- | PE1 |----------------+
@@ -538,21 +538,27 @@
       ]]></artwork>
       </figure>
       <t>
-      In <xref target="bgp-ct-example"/>, PE3 receives a VPN prefix P/m from PE1 and PE2, both advertised with NEXT_HOP N1 and N2 respectively and Mapping Community color:0:100 indicating a "Gold" SLA intent.
-      BGP Classful Transport is deployed and the Resolution Scheme for color:0:100 is configured as [TRDB-Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be resolved first over Gold transport tunnels, with a fallback to best-effort tunnels.
+      In <xref target="intent-transport-example"/>, PE3 receives a VPN prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2 respectively. An intent-aware transport technology is deployed, requesting "Gold" SLA transport for this prefix. Gold RSVP-TE tunnels exist from PE3 to PE1 but not from PE3 to PE2. Best-effort SR-MPLS tunnels exist to both PE1 and PE2.
       </t>
       <t>
-      Gold RSVP-TE tunnels exist from PE3 to PE1 but not from PE3 to PE2. Best-effort SR-MPLS tunnels exist to both PE1 and PE2. Following <xref target="RFC9832"/> Section 7.8 procedures, the Resolution Scheme resolves the NEXT_HOP of each path independently:
+      In a BGP Classful Transport (<xref target="RFC9832"/>) deployment, the prefix P/m is advertised with Mapping Community color:0:100 indicating the Gold SLA intent. The Resolution Scheme for color:0:100 is configured as [TRDB-Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be resolved first over Gold transport tunnels, with a fallback to best-effort tunnels. Following <xref target="RFC9832"/> Section 7.8 procedures, the Resolution Scheme resolves the NEXT_HOP of each path independently:
       </t>
       <ul>
         <li>Path1 (NH=N1): N1 is found in TRDB-Gold (RSVP-TE tunnel to PE1). Resolution succeeds in the primary TRDB.</li>
         <li>Path2 (NH=N2): N2 is not found in TRDB-Gold. Fallback occurs: N2 is found in TRDB-Best-Effort (SR-MPLS tunnel to PE2). Resolution succeeds in the backup TRDB.</li>
       </ul>
       <t>
-      Both paths are resolvable, but they resolved through different TRDBs with different characteristics. The Gold tunnel to PE1 has a cost of 1000 (RSVP-TE metric), while the best-effort tunnel to PE2 has a cost of 15 (IGP metric). These costs are not comparable.
+      In a BGP Color-Aware Routing (<xref target="RFC9871"/>) deployment, the prefix P/m is advertised as a service route with BGP Color Extended Community C_Gold. PE3 needs color-aware paths (N1, C_Gold) and (N2, C_Gold) to steer traffic. Following <xref target="RFC9871"/> Section 2.5 procedures:
+      </t>
+      <ul>
+        <li>Path1 (NH=N1): color-aware path (N1, C_Gold) is available via RSVP-TE. Resolution succeeds via the primary mechanism.</li>
+        <li>Path2 (NH=N2): color-aware path (N2, C_Gold) is not available. Local policy allows fallback: N2 is resolved via best-effort SR-MPLS. Resolution succeeds via the fallback mechanism.</li>
+      </ul>
+      <t>
+      In both cases, both paths are resolvable, but they resolved through different transport mechanisms with different characteristics. The Gold tunnel to PE1 has a cost of 1000 (RSVP-TE metric), while the best-effort tunnel to PE2 has a cost of 15 (IGP metric). These costs are not comparable.
       </t>
       <table>
-        <name>TRDB-Gold (TC 100) on PE3</name>
+        <name>Gold transport tunnels on PE3</name>
         <thead>
         <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
         </thead>
@@ -561,7 +567,7 @@
         </tbody>
       </table>
       <table>
-        <name>TRDB-Best-Effort (TC 0) on PE3</name>
+        <name>Best-effort transport tunnels on PE3</name>
         <thead>
         <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
         </thead>
@@ -574,11 +580,11 @@
       Without the forwarding address preference mechanism, PE3 would simply compare the costs: 1000 (path via PE1, Gold) vs 15 (path via PE2, best-effort), and would select the path via PE2. This is problematic because:
       </t>
       <ul>
-        <li>The path via PE2 uses best-effort transport, violating the Gold SLA intent requested by the Mapping Community.</li>
+        <li>The path via PE2 uses best-effort transport, violating the Gold SLA intent.</li>
         <li>The path via PE1, which satisfies the Gold SLA, is discarded solely because the RSVP-TE metric is numerically higher than the IGP metric, even though these values are not comparable.</li>
       </ul>
       <t>
-      Using the forwarding address preference, PE3 retrieves the preference value from each TRDB lookup. TRDB-Gold provides a preference of 50, while TRDB-Best-Effort provides a preference of 110. PE3 will first compare the forwarding address preference values and remove from consideration any path with the highest (least preferred) value. Path2 (preference 110) is removed. PE3 selects path1 via PE1, which satisfies the Gold SLA intent.
+      Using the forwarding address preference, PE3 retrieves the preference value from the transport table lookup. The Gold transport table provides a preference of 50, while the best-effort transport table provides a preference of 110. PE3 will first compare the forwarding address preference values and remove from consideration any path with the highest (least preferred) value. Path2 (preference 110) is removed. PE3 selects path1 via PE1, which satisfies the Gold SLA intent.
       </t>
       <figure>
       <artwork>
@@ -586,12 +592,12 @@
   P/m
     Path1:
       from PE1, NH=N1
-      resolved via TRDB-Gold (RSVP-TE)
+      resolved via Gold transport (RSVP-TE)
       cost 1000, forwarding address preference 50
 
     Path2:
       from PE2, NH=N2
-      resolved via TRDB-Best-Effort (SR-MPLS)
+      resolved via best-effort transport (SR-MPLS)
       cost 15, forwarding address preference 110
 
     => PE3 selects Path1 (lower preference value = more preferred)
@@ -691,6 +697,7 @@
       <references>
         <name>Informative References</name>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml3/reference.I-D.ietf-idr-bgp-bestpath-selection-criteria.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9871.xml"/>
 
       </references>
     </references>
