@@ -145,22 +145,6 @@
       </section>
     </section>
 
-    <section anchor="relationship-criteria">
-      <name>Relationship to draft-ietf-idr-bgp-bestpath-selection-criteria</name>
-      <t>
-      This document and <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> are complementary. Their relationship can be summarized as follows:
-      </t>
-      <ul>
-        <li>Scope: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> performs the resolvability check only; this document also covers internal cost determination and path preference.</li>
-        <li>Generality: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is MPLS-centric; this document is generic and applies to MPLS, SR Policy, SRv6 and intent-aware BGP transport.</li>
-        <li>This document introduces the forwarding address, decoupling path selection from the NEXT_HOP.</li>
-        <li>This document introduces the forwarding address preference to compare paths of non-comparable types.</li>
-        <li>This document derives the internal cost from the forwarding address, not from the NEXT_HOP only.</li>
-        <li>The MPLS case covered by <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is one instance of the generic mechanism defined here.</li>
-        <li>The procedures apply to future BGP extensions without redefinition.</li>
-      </ul>
-    </section>
-
     <section title="Use cases">
       <section anchor="mpls-path-use-case" title="Unicast over a BGP-free core">
         <figure anchor="next-hop-not-used-for-fwding" title="Next hop attribute not used for forwarding">
@@ -194,7 +178,7 @@
       </section>
       <section title="Segment Routing Traffic Engineering Policy">
         <t>
-        When using SR Policies <xref target="RFC9256"/>, the BGP NEXT_HOP may not accurately represent the actual forwarding path. The mechanism to carry the metric of an SR Policy in BGP is specified in <xref target="I-D.ietf-idr-sr-policy-metric"/>.
+        When using SR Policies <xref target="RFC9256"/>, the BGP NEXT_HOP may not accurately represent the actual forwarding path. When SR Policy candidate paths are distributed via BGP <xref target="RFC9830"/>, the metric of their segment lists can be carried as specified in <xref target="I-D.ietf-idr-sr-policy-metric"/>, allowing the SR Policy metric to be taken into account in the best-path selection.
         </t>
         <t>
         In <xref target="next-hop-not-used-for-fwding"/>, a BGP VPN service (as defined in <xref target="RFC4364"/>) is deployed between the PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and color C1.
@@ -684,6 +668,21 @@
       </t>
     </section>
     
+    <section anchor="relationship-criteria">
+      <name>Relationship to draft-ietf-idr-bgp-bestpath-selection-criteria</name>
+      <t>
+      This document and <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> are complementary. Their relationship can be summarized as follows:
+      </t>
+      <ul>
+        <li>Scope: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> performs the resolvability check only; this document also covers internal cost determination and path preference.</li>
+        <li>Generality: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is MPLS-centric; this document is generic and applies to MPLS, SR Policy, SRv6 and intent-aware BGP transport.</li>
+        <li>This document introduces the forwarding address, decoupling path selection from the NEXT_HOP.</li>
+        <li>This document introduces the forwarding address preference to compare paths of non-comparable types.</li>
+        <li>This document derives the internal cost from the forwarding address, not from the NEXT_HOP only.</li>
+        <li>The MPLS case covered by <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is one instance of the generic mechanism defined here.</li>
+      </ul>
+    </section>
+
     <section anchor="IANA">
       <name>IANA Considerations</name>
       <t>This document does not require any IANA actions.</t>
@@ -720,11 +719,11 @@
         <name>Informative References</name>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml3/reference.I-D.ietf-idr-bgp-bestpath-selection-criteria.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml3/reference.I-D.ietf-idr-sr-policy-metric.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9830.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9871.xml"/>
 
       </references>
     </references>
-    
 
     <section anchor="Acknowledgements" numbered="false">
       <name>Acknowledgements</name>
@@ -732,7 +731,6 @@
       The authors would like to acknowledge Ketan Talaulikar, Serge Krier and Shyam Sethuram for review and comments.
       </t>
     </section>
-    
     
  </back>
 </rfc>
