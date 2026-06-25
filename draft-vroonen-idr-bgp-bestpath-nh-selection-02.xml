@@ -13,7 +13,7 @@
 <rfc
   xmlns:xi="http://www.w3.org/2001/XInclude"
   category="std"
-  docName="draft-vroonen-idr-bgp-bestpath-nh-selection-01"
+  docName="draft-vroonen-idr-bgp-bestpath-nh-selection-02"
   ipr="trust200902"
   obsoletes=""
   updates="4271"
@@ -24,7 +24,7 @@
   <front>
     <title abbrev="BGP nh selection enhancements">BGP best path next-hop selection enhancements</title>
 
-    <seriesInfo name="Internet-Draft" value="draft-vroonen-idr-bgp-bestpath-nh-selection-01"/>
+    <seriesInfo name="Internet-Draft" value="draft-vroonen-idr-bgp-bestpath-nh-selection-02"/>
 
     <author fullname="Olivier Vroonen" initials="O." role="editor" surname="Vroonen">
       <organization>Cisco</organization>
@@ -44,6 +44,12 @@
         <email>kandhla.chandi@bell.ca</email>
       </address>
     </author>
+    <author fullname="Jie Dong" initials="J." surname="Dong">
+      <organization>Huawei</organization>
+      <address>
+        <email>jie.dong@huawei.com</email>
+      </address>
+    </author>
     <date year="2026"/>
 
 
@@ -54,11 +60,11 @@
     <abstract>
       <t>
       BGP [RFC4271] has originally been designed to carry IPv4 routing information over the Internet. 
-      IP routing being "hop-by-hop" in nature, [RFC4271] defines the NEXT_HOP attribute which purpose is to carry the address of the next router to send the IP packet to. 
+      IP routing being "hop-by-hop" in nature, NEXT_HOP which purpose is to carry the address of the next router to send the IP packet to. 
       In BGP, the next-hop may not be a directly connected router, hence, when evaluating paths, a BGP speaker must determine if the next-hop is resolvable and, if so, determine the internal cost to reach it. 
       </t>
       <t>
-      The incremental use of tunneling technologies to carry traffic between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6...) may violate the assumption that the address carried in the NEXT_HOP attribute is representative of the actual forwarding next-hop.
+      The incremental use of tunneling technologies to carry traffic between routers (e.g.: GRE, MPLS, SR-MPLS, SRv6...) may violate the assumption that the address carried in the NEXT_HOP is representative of the actual forwarding next-hop.
       These technologies decouple the BGP control-plane's view of the next-hop from the data-plane's actual forwarding endpoint.
       This document describes the problems that arise from this decoupling.
       These problems include sub-optimal path selection, incorrect resolvability tracking of the forwarding path leading to traffic drop or misrouting, and others.
@@ -73,12 +79,9 @@
         <name>Introduction</name>
         <t>
         BGP <xref target="RFC4271"/> is designed to exchange network reachability information between routing domains. 
-        A BGP update typically contains a prefix and a set of path attributes, including the well-known mandatory NEXT_HOP attribute. 
+        A BGP update typically contains a prefix and a set of path attributes, including NEXT_HOP. 
         The receiving router uses this next-hop address to determine the egress point for traffic destined for the advertised prefix. 
         The underlying assumption is that the next-hop address represents the actual next router in the data plane's forwarding path.
-        </t>
-        <t>
-        BGP NEXT_HOP attribute as defined in <xref target="RFC4271"/> and BGP NEXT_HOP field in the MP_REACH_NLRI attribute as defined in <xref target="RFC4760"/> are referred to as NEXT_HOP attribute in this document.
         </t>
         <t>
         <xref target="RFC4271"/> Section 9.1.2.1 defines the route resolvability condition: a BGP route is considered unresolvable if the BGP speaker's routing table has no route matching the BGP route next-hop address.
@@ -93,13 +96,13 @@
 
            +------+ 
     P/m  --| RTR1 |----------------+
-           +------+   (metric=1)   |
+           +------+ (N1, metric=1) |
                                    |
                               +------+
                               | RTR3 |
                               +------+
                                    |
-           +------+   (metric=2)   |
+           +------+ (N2, metric=2) |
     P/m  --| RTR2 |----------------+
            +------+ 
           ]]>
@@ -110,7 +113,7 @@
         Based on <xref target="RFC4271"/> procedures, RTR3 will select the path with the lowest cost to the NEXT_HOP address, so RTR3 will select the path received from RTR1. In this example, the path used to resolve N1 and N2 reflects the actual forwarding path, which makes RTR3's best-path decision accurate.
         </t>
         <t>
-        This document describes cases where the NEXT_HOP attribute used in the BGP update is not representative of the actual forwarding path. 
+        This document describes cases where the NEXT_HOP used in the BGP update is not representative of the actual forwarding path. 
         In these cases, the resolvability condition may fail in its goal and path selection may be done on inaccurate criteria leading to suboptimal routing, network congestion, traffic drop or misrouting...
         </t>
         <t>
@@ -125,7 +128,7 @@
             <xref target="RFC9012"/> Section 7 improves the route resolvability condition by verifying that there is a feasible tunnel. However, it doesn't take into account that the cost associated with the tunnel may be different from the cost associated with the BGP next-hop.
             </li>
             <li>
-            <xref target="RFC9252"/> defines SRv6 overlay services signaling using BGP. The procedures involve the advertisement of an SRv6 Service TLV within the BGP Prefix SID attribute to signal the SID to be used for forwarding. RFC9252 highlights that ingress PE must perform a resolvability check for the SRv6 SID in addition to the resolvability check done on the NEXT_HOP attribute. However, it doesn't take into account that the cost associated with the tunnel may be different from the cost associated with the BGP next-hop.
+            <xref target="RFC9252"/> defines SRv6 overlay services signaling using BGP. The procedures involve the advertisement of an SRv6 Service TLV within the BGP Prefix SID attribute to signal the SID to be used for forwarding. RFC9252 highlights that ingress PE must perform a resolvability check for the SRv6 SID in addition to the resolvability check done on the NEXT_HOP. However, it doesn't take into account that the cost associated with the SRv6 SID may be different from the cost associated with the BGP next-hop.
             </li>
         </ul>
         <t>
@@ -141,16 +144,16 @@
             all capitals, as shown here.</t>
       </section>
     </section>
-    
+
     <section title="Use cases">
-      <section anchor="mpls-path-use-case" title="MPLS path">
+      <section anchor="mpls-path-use-case" title="Unicast over a BGP-free core">
         <figure anchor="next-hop-not-used-for-fwding" title="Next hop attribute not used for forwarding">
           <artwork><![CDATA[
 
                   [D=6]         [D=6]
           +-----+ (M=1) +----+  (M=1)
   P/m  -- | PE1 |-------| P1 |--------+
-          +-----+       +----+        |
+   (N1)   +-----+       +----+        |
           (M=1)  \     /              |
           [D=14]  \   /               |
                    \ /              +-----+
@@ -158,7 +161,7 @@
                    / \              +-----+
           (M=5)   /   \                |
           [D=14] /     \               |
-          +-----+       +----+         |
+   (N2)   +-----+       +----+         |
   P/m  -- | PE2 |-------| P2 |---------+
           +-----+ (M=5) +----+  (M=5)
                   [D=2]         [D=2]
@@ -166,15 +169,16 @@
           </artwork>
         </figure>
         <t>
-        In <xref target="next-hop-not-used-for-fwding"/>, a BGP MPLS VPN (as defined in <xref target="RFC4364"/>) is deployed over PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.
+        In <xref target="next-hop-not-used-for-fwding"/>, an IPv4 unicast service is deployed over a BGP-free MPLS core. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2.
         The existence of a route in PE3's IPv4 routing table to reach N1 or N2 (defined in <xref target="RFC4271"/>) is not sufficient to ensure that traffic can be carried from PE3 to PE1 or PE2.
         PE3 needs to ensure that there is a tunnel available to reach PE1 or PE2 that can carry MPLS traffic (e.g.: an MPLS Label Switched Path (LSP)).
-        By checking only for the existence of a route in its routing table, PE3 could create a traffic drop or misrouting if there is no tunnel to carry the MPLS VPN traffic.
+        By checking only for the existence of a route in its routing table, PE3 could create a traffic drop or misrouting if there is no tunnel to carry the IPv4 unicast traffic.
+        This use case is also considered in <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/>.
         </t>
       </section>
       <section title="Segment Routing Traffic Engineering Policy">
         <t>
-        When using SR Policies <xref target="RFC9256"/>, the BGP NEXT_HOP attribute may not accurately represent the actual forwarding path.
+        When using SR Policies <xref target="RFC9256"/>, the BGP NEXT_HOP may not accurately represent the actual forwarding path. When SR Policy candidate paths are distributed via BGP <xref target="RFC9830"/>, the metric of their segment lists can be carried as specified in <xref target="I-D.ietf-idr-sr-policy-metric"/>, allowing the SR Policy metric to be taken into account in the best-path selection.
         </t>
         <t>
         In <xref target="next-hop-not-used-for-fwding"/>, a BGP VPN service (as defined in <xref target="RFC4364"/>) is deployed between the PEs. Let's assume PE3 receives prefix P/m from PE1 and PE2 with NEXT_HOP N1, N2 and color C1.
@@ -185,7 +189,7 @@
             <li>Costs D in brackets represents cost of latency-based metric</li>
         </ul>
         <t>
-        If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP attribute, it will not verify the existence and state of a corresponding SR Policy (C1, Nx). Consequently, it may select a suboptimal path by considering the cost to the NEXT_HOP address instead of the cost of the SR policy. The best path considering SR-policy (C1, Nx) cost is via PE2, while the best path considering IGP metric is via PE1.
+        If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP, it will not verify the existence and state of a corresponding SR Policy (C1, Nx). Consequently, it may select a suboptimal path by considering the cost to the NEXT_HOP address instead of the cost of the SR policy. The best path considering SR-policy (C1, Nx) cost is via PE2, while the best path considering IGP metric is via PE1.
         </t>
         <table>
         <name>IPv4 routing table of PE3</name>
@@ -222,7 +226,7 @@
       </section>
       <section title="SRv6 services">
         <t>
-        When using SRv6 services as defined in <xref target="RFC9252"/>, the BGP NEXT_HOP attribute may not be representative of the actual forwarding path.
+        When using SRv6 services as defined in <xref target="RFC9252"/>, the BGP NEXT_HOP may not be representative of the actual forwarding path.
         </t>
         <t>
         Considering <xref target="next-hop-not-used-for-fwding"/>, an SRv6-based BGP VPN is deployed between the PEs. PE1 uses locator L1 for algorithm 0 and L1_FA for flexible algorithm 128 (<xref target="RFC9350"/>) optimized for low-latency. Similarly, PE2 uses locator L2 for algorithm 0 and L2_FA for flexible algorithm 128. 
@@ -277,7 +281,7 @@
                 <li>SRv6 SID Information Sub-TLV contained within L3 or L2 SRv6 SID defined in <xref target="RFC9252"/></li>
             </ul>
             <t>
-            Unless a BGP update contains another type of forwarding address, the BGP NEXT_HOP attribute is considered as the forwarding address.
+            Unless a BGP update contains another type of forwarding address, the BGP NEXT_HOP is considered as the forwarding address.
             </t>
             <t>
             The forwarding address MAY be complemented by a forwarding context. The forwarding context characterizes more the forwarding path to be used.
@@ -307,6 +311,9 @@
         Similarly, when aggregate routes are present in the routing table, user may want to prevent the forwarding address (which is a specific route) to be resolved over the aggregate routes. A resolution constraint based on prefix/mask can be done to avoid such resolution to be valid.
         An implementation MAY provide a set of configuration options for resolution constraints.
         </t>
+        <t>
+        Another example of a resolution constraint is the "Resolution Scheme", defined in BGP Classful Transport <xref target="RFC9832"/>. The "Resolution Scheme" constrains the resolution of the NEXT_HOP to an ordered set of transport classes dictated by the intent (Mapping Community) attached to the route.
+        </t>
         </section>
         <section title="Route resolvability condition">
         <t>
@@ -314,7 +321,7 @@
         </t>
         <ul>
             <li>
-                The route resolvability check for the BGP NEXT_HOP attribute MUST continue to be done.
+                The route resolvability check for the BGP NEXT_HOP MUST continue to be done.
             </li>
             <li>
                 In addition, the route resolvability criteria SHOULD be performed based on the forwarding address.
@@ -342,6 +349,9 @@
         </figure>
         <t>
         Costs retrieved from different types of forwarding addresses or contexts may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
+        </t>
+        <t>
+        The issue of comparing costs of paths of various types is not new. In a regular IP routed network (without tunnels) that runs BGP, a prefix P/m may have paths with nexthops reachable through different IGPs or IGP route types, where costs computed by each IGP may use a different reference. While the routing table can tie-break across different protocols or route types for a single prefix using an internal preference (administrative distance) mechanism, this does not help when comparing BGP paths whose nexthops are resolved through different IGPs.
         </t>
         <t>
         In order to compare the paths, this document introduces the concept of forwarding address preference. The preference is a local numerical value. An implementation SHOULD pick the lowest value as the most preferred.
@@ -428,7 +438,7 @@
         </section>
         <section title="Next hop and forwarding address tracking" anchor="address-tracking">
         <t>
-        A BGP speaker SHOULD track the resolvability of both the NEXT_HOP attribute and the forwarding address. If either the NEXT_HOP or the forwarding address becomes unresolvable or if the cost to reach either the NEXT_HOP or the forwarding address changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or forwarding address.
+        A BGP speaker SHOULD track the resolvability of both the NEXT_HOP and the forwarding address. If either the NEXT_HOP or the forwarding address becomes unresolvable or if the cost to reach either the NEXT_HOP or the forwarding address changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or forwarding address.
         This tracking MUST be done for all paths, including the best path and non-best paths.
         </t>
         </section>
@@ -442,17 +452,17 @@
       <artwork><![CDATA[
                       +-----+     (M=5)
               P/m  -- | PE1 |----------------+
-                      +-----+                |
+               (N1)   +-----+                |
                                              |
                                              |
                       +-----+     (M=10)   +----+     (M=5)    +-----+
               P/m  -- | PE2 |--------------| P1 |--------------| PE4 |
-                      +-----+              +----+              +-----+
+               (N2)   +-----+              +----+              +-----+
                                              |
                                              |                                             
                       +-----+     (M=15)     |
               P/m  -- | PE3 |----------------+
-                      +-----+          
+               (N3)   +-----+          
       ]]></artwork>
       </figure>
       <t>
@@ -517,10 +527,105 @@
       </t>
     </section>
 
+    <section title="Example with Intent-Aware BGP Transport">
+      <t>
+      This example illustrates the need for forwarding address preference when intent-aware BGP transport technologies are deployed. Both BGP Classful Transport (<xref target="RFC9832"/>) and BGP Color-Aware Routing (<xref target="RFC9871"/>) can lead to situations where two paths for a prefix resolve through different transport mechanisms with incomparable costs.
+      </t>
+      <figure anchor="intent-transport-example">
+      <artwork><![CDATA[
+                      +-----+     (M=5)
+              P/m  -- | PE1 |----------------+
+               (N1)   +-----+                |
+                                           +----+     (M=5)    +-----+
+                                           | P1 |--------------| PE3 |
+                                           +----+              +-----+
+                      +-----+     (M=10)    |
+              P/m  -- | PE2 |----------------+
+               (N2)   +-----+          
+      ]]></artwork>
+      </figure>
+      <t>
+      In <xref target="intent-transport-example"/>, PE3 receives a VPN prefix P/m from PE1 and PE2 with NEXT_HOP N1 and N2 respectively. An intent-aware transport technology is deployed, requesting "Gold" SLA transport for this prefix. Gold RSVP-TE tunnels exist from PE3 to PE1 but not from PE3 to PE2. Best-effort SR-MPLS tunnels exist to both PE1 and PE2.
+      </t>
+      <t>
+      In a BGP Classful Transport (<xref target="RFC9832"/>) deployment, the prefix P/m is advertised with Mapping Community color:0:100 indicating the Gold SLA intent. The Resolution Scheme for color:0:100 is configured with the following ordered set of Transport Route Databases (TRDBs): [TRDB-Gold, TRDB-Best-Effort], meaning the NEXT_HOP should be resolved first over Gold transport tunnels, with a fallback to best-effort tunnels. Following <xref target="RFC9832"/> Section 7.8 procedures, the Resolution Scheme resolves the NEXT_HOP of each path independently:
+      </t>
+      <ul>
+        <li>Path1 (NH=N1): N1 is found in TRDB-Gold (RSVP-TE tunnel to PE1). Resolution succeeds in the primary TRDB.</li>
+        <li>Path2 (NH=N2): N2 is not found in TRDB-Gold. Fallback occurs: N2 is found in TRDB-Best-Effort (SR-MPLS tunnel to PE2). Resolution succeeds in the backup TRDB.</li>
+      </ul>
+      <t>
+      In a BGP Color-Aware Routing (<xref target="RFC9871"/>) deployment, the prefix P/m is advertised as a service route with BGP Color Extended Community C_Gold. PE3 needs color-aware paths (N1, C_Gold) and (N2, C_Gold) to steer traffic. Following <xref target="RFC9871"/> Section 2.5 procedures:
+      </t>
+      <ul>
+        <li>Path1 (NH=N1): color-aware path (N1, C_Gold) is available via RSVP-TE. Resolution succeeds via the primary mechanism.</li>
+        <li>Path2 (NH=N2): color-aware path (N2, C_Gold) is not available. Local policy allows fallback: N2 is resolved via best-effort SR-MPLS. Resolution succeeds via the fallback mechanism.</li>
+      </ul>
+      <t>
+      In both cases, both paths are resolvable, but they resolved through different transport mechanisms with different characteristics. The Gold tunnel to PE1 has a cost of 1000 (RSVP-TE metric), while the best-effort tunnel to PE2 has a cost of 15 (IGP metric). These costs are not comparable.
+      </t>
+      <table>
+        <name>Gold transport tunnels on PE3</name>
+        <thead>
+        <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>RSVP-TE</td><td>50</td><td>1000</td></tr>
+        </tbody>
+      </table>
+      <table>
+        <name>Best-effort transport tunnels on PE3</name>
+        <thead>
+        <tr><th>Prefix</th><th>Protocol</th><th>Preference</th><th>Cost</th></tr>
+        </thead>
+        <tbody>
+        <tr><td>N1</td><td>IS-IS SR</td><td>110</td><td>10</td></tr>
+        <tr><td>N2</td><td>IS-IS SR</td><td>110</td><td>15</td></tr>
+        </tbody>
+      </table>
+      <t>
+      Without the forwarding address preference mechanism, PE3 would simply compare the costs: 1000 (path via PE1, Gold) vs 15 (path via PE2, best-effort), and would select the path via PE2. This is problematic because:
+      </t>
+      <ul>
+        <li>The path via PE2 uses best-effort transport, violating the Gold SLA intent.</li>
+        <li>The path via PE1, which satisfies the Gold SLA, is discarded solely because the RSVP-TE metric is numerically higher than the IGP metric, even though these values are not comparable.</li>
+      </ul>
+      <t>
+      Using the forwarding address preference, PE3 retrieves the preference value from the transport table lookup. The Gold transport table provides a preference of 50, while the best-effort transport table provides a preference of 110. PE3 will first compare the forwarding address preference values and remove from consideration any path with the highest (least preferred) value. Path2 (preference 110) is removed. PE3 selects path1 via PE1, which satisfies the Gold SLA intent.
+      </t>
+      <figure>
+      <artwork>
+
+  P/m
+    Path1:
+      from PE1, NH=N1
+      resolved via Gold transport (RSVP-TE)
+      cost 1000, forwarding address preference 50
+
+    Path2:
+      from PE2, NH=N2
+      resolved via best-effort transport (SR-MPLS)
+      cost 15, forwarding address preference 110
+
+    => PE3 selects Path1 (lower preference value = more preferred)
+
+      </artwork>
+      </figure>
+    </section>
+
     <section anchor="Operational">
       <name>Operational Considerations</name>
       <t>
-      This document defines mechanisms that modify the BGP best path selection process defined in [RFC4271]. Consequently, the potential impact on routing loops needs to be analyzed.
+      In most cases, tunnels carry traffic from the ingress to the egress node that advertised the BGP service route, as transit routers are not aware of the BGP service routes. For instance, in SRv6 service cases, the SRv6 encapsulation using the advertised SID as destination carries traffic down to the node that knows about the service route. Determining the internal cost by using the forwarding address (tunnel endpoint, SRv6 SID, ...) makes sense in these cases as it reflects the end-to-end cost.
+      </t>
+      <t>
+      However, there are cases where the tunnel does not terminate on the service egress. One example is a service route advertised with a color allowing for usage of a null endpoint policy. Another example is a service route advertised with a Tunnel Encapsulation attribute using a tunnel endpoint different from the service egress. In such cases, the tail node of the tunnel must have routing entries for the service routes to ensure end-to-end reachability.
+      </t>
+      <t>
+      When determining the internal cost using the forwarding address in these cases, the retrieved cost may not reflect the end-to-end path. However, using the NEXT_HOP address would not necessarily provide a better view: it would still give an inaccurate picture of distances from a traffic forwarding perspective, since the forwarding path does not follow the IGP-routed path. Additionally, operators commonly manipulate the NEXT_HOP through routing policies, so there is no guarantee that the NEXT_HOP address correctly reflects the real egress node. Hence, using the forwarding address in cases where the tunnel tail is not the service egress is not worse compared to using the NEXT_HOP.
+      </t>
+      <t>
+      This document defines mechanisms that modify the BGP best path selection process defined in <xref target="RFC4271"/>. Consequently, the potential impact on routing loops needs to be analyzed.
       </t>
       <t>
       The mechanisms described in this document are typically deployed in environments utilizing tunneling technologies (such as MPLS or SRv6). In these scenarios, the BGP path selection determines the specific Forwarding Address used for encapsulation.
@@ -563,6 +668,21 @@
       </t>
     </section>
     
+    <section anchor="relationship-criteria">
+      <name>Relationship to draft-ietf-idr-bgp-bestpath-selection-criteria</name>
+      <t>
+      This document and <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> are complementary. Their relationship can be summarized as follows:
+      </t>
+      <ul>
+        <li>Scope: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> performs the resolvability check only; this document also covers internal cost determination and path preference.</li>
+        <li>Generality: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is MPLS-centric; this document is generic and applies to MPLS, SR Policy, SRv6 and intent-aware BGP transport.</li>
+        <li>This document introduces the forwarding address, decoupling path selection from the NEXT_HOP.</li>
+        <li>This document introduces the forwarding address preference to compare paths of non-comparable types.</li>
+        <li>This document derives the internal cost from the forwarding address, not from the NEXT_HOP only.</li>
+        <li>The MPLS case covered by <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is one instance of the generic mechanism defined here.</li>
+      </ul>
+    </section>
+
     <section anchor="IANA">
       <name>IANA Considerations</name>
       <t>This document does not require any IANA actions.</t>
@@ -572,7 +692,7 @@
       <name>Security Considerations</name>
       <t>
       This document modifies BGP route selection process by using data other than the next-hop address to perform the resolvability check as well as to compute the internal cost. 
-      This does not add any security consideration compared to using the existing NEXT_HOP attribute defined in <xref target="RFC4271"/>.
+      This does not add any security consideration compared to using the existing NEXT_HOP defined in <xref target="RFC4271"/>.
       </t>
     </section>
   </middle>
@@ -585,7 +705,6 @@
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.2119.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.4271.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.4364.xml"/>
-        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.4760.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8665.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9012.xml"/>
@@ -593,15 +712,18 @@
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9252.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9256.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9350.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9832.xml"/>
       </references>
  
       <references>
         <name>Informative References</name>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml3/reference.I-D.ietf-idr-bgp-bestpath-selection-criteria.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml3/reference.I-D.ietf-idr-sr-policy-metric.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9830.xml"/>
+        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9871.xml"/>
 
       </references>
     </references>
-    
 
     <section anchor="Acknowledgements" numbered="false">
       <name>Acknowledgements</name>
@@ -609,7 +731,6 @@
       The authors would like to acknowledge Ketan Talaulikar, Serge Krier and Shyam Sethuram for review and comments.
       </t>
     </section>
-    
     
  </back>
 </rfc>
