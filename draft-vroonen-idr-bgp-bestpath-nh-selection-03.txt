@@ -6,14 +6,16 @@ Interdomain Working Group                                O. Vroonen, Ed.
 Internet-Draft                                              S. Litkowski
 Updates: 4271 (if approved)                                        Cisco
 Intended status: Standards Track                               K. Chandi
-Expires: 27 December 2026                                    Bell Canada
+Expires: 7 January 2027                                      Bell Canada
                                                                  J. Dong
                                                                   Huawei
-                                                            25 June 2026
+                                                                I. Means
+                                                                    AT&T
+                                                             6 July 2026
 
 
              BGP best path next-hop selection enhancements
-             draft-vroonen-idr-bgp-bestpath-nh-selection-02
+             draft-vroonen-idr-bgp-bestpath-nh-selection-03
 
 Abstract
 
@@ -34,8 +36,9 @@ Abstract
    from this decoupling.  These problems include sub-optimal path
    selection, incorrect resolvability tracking of the forwarding path
    leading to traffic drop or misrouting, and others.  This document
-   proposes some modification of BGP path selection procedures to
-   accommodate these use cases.
+   specifies how BGP obtains resolvability, preference, metric, and
+   tracking information from resolution of the forwarding path and uses
+   those values as inputs to BGP path selection.
 
 Status of This Memo
 
@@ -50,12 +53,9 @@ Status of This Memo
 
 
 
-
-
-
-Vroonen, et al.         Expires 27 December 2026                [Page 1]
+Vroonen, et al.          Expires 7 January 2027                 [Page 1]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
    Internet-Drafts are draft documents valid for a maximum of six months
@@ -63,7 +63,7 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 27 December 2026.
+   This Internet-Draft will expire on 7 January 2027.
 
 Copyright Notice
 
@@ -87,31 +87,31 @@ Table of Contents
      2.1.  Unicast over a BGP-free core  . . . . . . . . . . . . . .   4
      2.2.  Segment Routing Traffic Engineering Policy  . . . . . . .   5
      2.3.  SRv6 services . . . . . . . . . . . . . . . . . . . . . .   7
-   3.  Modification of the BGP route selection process . . . . . . .   8
-     3.1.  Forwarding address  . . . . . . . . . . . . . . . . . . .   8
+   3.  Path Resolution Inputs to BGP Route Selection . . . . . . . .   8
+     3.1.  Path resolution tuple . . . . . . . . . . . . . . . . . .   8
      3.2.  Resolution constraints  . . . . . . . . . . . . . . . . .   9
-     3.3.  Route resolvability condition . . . . . . . . . . . . . .   9
+     3.3.  Route resolvability condition . . . . . . . . . . . . . .  10
      3.4.  Internal cost determination . . . . . . . . . . . . . . .  10
-     3.5.  Next hop and forwarding address tracking  . . . . . . . .  13
+     3.5.  Next hop and path resolution tracking . . . . . . . . . .  13
    4.  Example . . . . . . . . . . . . . . . . . . . . . . . . . . .  13
    5.  Example with Intent-Aware BGP Transport . . . . . . . . . . .  15
    6.  Operational Considerations  . . . . . . . . . . . . . . . . .  18
    7.  Relationship to
-           draft-ietf-idr-bgp-bestpath-selection-criteria  . . . . .  19
+           draft-ietf-idr-bgp-bestpath-selection-criteria  . . . . .  20
    8.  IANA Considerations . . . . . . . . . . . . . . . . . . . . .  20
    9.  Security Considerations . . . . . . . . . . . . . . . . . . .  20
    10. References  . . . . . . . . . . . . . . . . . . . . . . . . .  20
      10.1.  Normative References . . . . . . . . . . . . . . . . . .  20
-     10.2.  Informative References . . . . . . . . . . . . . . . . .  21
+     10.2.  Informative References . . . . . . . . . . . . . . . . .  22
    Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  22
    Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  22
 
 
 
 
-Vroonen, et al.         Expires 27 December 2026                [Page 2]
+Vroonen, et al.          Expires 7 January 2027                 [Page 2]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 1.  Introduction
@@ -165,9 +165,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-Vroonen, et al.         Expires 27 December 2026                [Page 3]
+Vroonen, et al.          Expires 7 January 2027                 [Page 3]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
    This document describes cases where the NEXT_HOP used in the BGP
@@ -199,8 +199,11 @@ Internet-Draft        BGP nh selection enhancements            June 2026
       take into account that the cost associated with the SRv6 SID may
       be different from the cost associated with the BGP next-hop.
 
-   This document defines generic modifications to the BGP decision
-   process that can apply to all the use cases.
+   This document defines a common path-resolution model for these use
+   cases.  Each candidate path is associated with a path resolution
+   tuple whose resolution provides inputs to BGP route selection.  BGP
+   uses these inputs to compare candidate paths and tracks resolution
+   changes that may require the selection to be reevaluated.
 
 1.1.  Requirements Language
 
@@ -218,12 +221,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-
-
-
-Vroonen, et al.         Expires 27 December 2026                [Page 4]
+Vroonen, et al.          Expires 7 January 2027                 [Page 4]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
                      [D=6]         [D=6]
@@ -277,9 +277,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-Vroonen, et al.         Expires 27 December 2026                [Page 5]
+Vroonen, et al.          Expires 7 January 2027                 [Page 5]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
    If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP,
@@ -312,10 +312,11 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
    Considering that PE3 may take into account the cost of the SR policy
    and then picks up the path from PE2 as best.  If the SR Policy (C1,
-   N2) is down or not present, and considering that color C1 is using
-   CO-flag equal to 00 ([RFC9246] Section 8.8.1), path from PE2 is
-   authorized to use IGP path to next-hop N2 (fallback to IGP path via
-   P1 with cost=6) as there is no policy (C1, N2) available.  This
+   N2) is down or not present, and considering that color C1 uses Color-
+   Only Type 0 (bits 00), as defined in [RFC9830] Section 3, the
+   steering procedures in [RFC9256] Section 8.8.1 authorize the path
+   from PE2 to use the IGP path to next-hop N2 (fallback to the IGP path
+   via P1 with cost=6) when there is no policy (C1, N2) available.  This
    situation has multiple drawbacks:
 
    *  The costs of the two BGP paths are not directly comparable, which
@@ -332,10 +333,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-
-Vroonen, et al.         Expires 27 December 2026                [Page 6]
+Vroonen, et al.          Expires 7 January 2027                 [Page 6]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 2.3.  SRv6 services
@@ -389,9 +389,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-Vroonen, et al.         Expires 27 December 2026                [Page 7]
+Vroonen, et al.          Expires 7 January 2027                 [Page 7]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
    The problem of path suboptimality may also happen with algorithm 0,
@@ -403,17 +403,20 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    of 2.  The cost to reach the SID must also be taken into account in
    this scenario to ensure that the traffic offload works properly.
 
-3.  Modification of the BGP route selection process
+3.  Path Resolution Inputs to BGP Route Selection
 
-3.1.  Forwarding address
+3.1.  Path resolution tuple
 
-   This document defines the forwarding address as the IP address of the
-   next router to which packets are sent.  The forwarding address may
-   come from the NEXT_HOP or a different address which has been signaled
-   in a different attribute along with the path.
+   This document defines a path resolution tuple as a resolution key
+   and, when required, a resolution context.  The resolution key
+   identifies the object to be resolved for a BGP path.  For the
+   mechanisms defined in this document, the resolution key is an IP
+   address.  It may be the BGP NEXT_HOP or a different address signaled
+   with the path, such as a Tunnel Egress Endpoint or an SRv6 Service
+   SID.
 
    The following data already defined in BGP standards SHOULD be
-   considered as forwarding addresses:
+   considered as resolution keys:
 
    *  The Tunnel Egress Endpoint Sub-TLV contained in Tunnel
       Encapsulation attribute defined in [RFC9012]
@@ -421,13 +424,14 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    *  SRv6 SID Information Sub-TLV contained within L3 or L2 SRv6 SID
       defined in [RFC9252]
 
-   Unless a BGP update contains another type of forwarding address, the
-   BGP NEXT_HOP is considered as the forwarding address.
+   Unless a BGP update contains another type of resolution key, the BGP
+   NEXT_HOP is considered as the resolution key.
 
-   The forwarding address MAY be complemented by a forwarding context.
-   The forwarding context characterizes more the forwarding path to be
-   used.  The following attributes defined in BGP standards are examples
-   of forwarding context:
+   The resolution key MAY be complemented by a resolution context.  When
+   present, the resolution context identifies or parameterizes the
+   resolution procedure and datastore used to resolve the resolution
+   key.  The following attributes defined in BGP standards are examples
+   of resolution contexts:
 
    *  The Tunnel Encapsulation attribute defined in [RFC9012]
 
@@ -436,51 +440,71 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    *  The SRv6 Sub-TLV and Sub-sub-TLV contained within L3 or L2 SRv6
       SID TLV as defined in [RFC9252] other than the SID itself
 
-   Each new BGP extension SHOULD specify if an address carried by the
-   extension must be considered as a forwarding address.  The procedures
-   defined in the next section SHOULD apply for any new forwarding
-   address defined without having to redefine them.
 
 
 
 
 
-Vroonen, et al.         Expires 27 December 2026                [Page 8]
+Vroonen, et al.          Expires 7 January 2027                 [Page 8]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
+
+   Two path resolution tuples containing the same resolution key but
+   differing in resolution context, including whether a context is
+   present, are distinct resolution requests.  For example, in the SR
+   Policy use case above, {N1, C1} requests resolution through SR Policy
+   (C1, N1), whereas {N1} requests resolution of next hop N1 without a
+   route-carried resolution context.
+
+   Each new BGP extension SHOULD specify whether an address carried by
+   the extension is a resolution key and, when applicable, how its
+   resolution context is derived.  The procedures defined in the next
+   section SHOULD apply for any new resolution key without having to
+   redefine them.
 
 3.2.  Resolution constraints
 
-   When the forwarding address and its context are identified for a BGP
-   route, the implementation may know the required characteristics of
-   the route to be used to resolve the forwarding address.  Depending on
-   the type of forwarding address and context, the implementation may
-   need to ensure that the forwarding address is resolved through a
-   specific type of route in a specific table.  This resolution
-   constraint may come from the forwarding context and/or may be
-   configured locally.
+   When a path resolution tuple is identified for a BGP route, the
+   resolver uses the resolution key together with its resolution
+   context, when present.  Resolution constraints are rules applied when
+   resolving a path resolution tuple.  They restrict which routes or
+   datastores may provide a valid resolution.  These constraints are not
+   additional components of the path resolution tuple and may be derived
+   from the resolution context or configured locally.
 
-   In some cases, operator may want to enforce that the forwarding
-   address is resolved through a specific type of route.  This can be
-   achieved by configuring a local resolution constraint.  Reusing the
-   example defined in Section 2.1, if we consider an IPv4 unicast BGP
-   service carried over a BGP free-core, the BGP NEXT_HOP must be
-   reachable through a tunnel to allow the end-to-end packet delivery.
-   Such a case cannot be derived from the BGP update context and BGP
-   must be configured to resolve the NEXT_HOP only through tunnels (of
-   any or specific types).  Similarly, when aggregate routes are present
-   in the routing table, user may want to prevent the forwarding address
-   (which is a specific route) to be resolved over the aggregate routes.
-   A resolution constraint based on prefix/mask can be done to avoid
-   such resolution to be valid.  An implementation MAY provide a set of
-   configuration options for resolution constraints.
+   In some cases, operator may want to enforce that the resolution key
+   is resolved through a specific type of route.  This can be achieved
+   by configuring a local resolution constraint.  Reusing the example
+   defined in Section 2.1, if we consider an IPv4 unicast BGP service
+   carried over a BGP free-core, the BGP NEXT_HOP must be reachable
+   through a tunnel to allow the end-to-end packet delivery.  Such a
+   case cannot be derived from the BGP update context and BGP must be
+   configured to resolve the NEXT_HOP only through tunnels (of any or
+   specific types).  Similarly, when aggregate routes are present in the
+   routing table, a user may want to prevent a resolution key that
+   identifies a more-specific destination from being resolved over an
+   aggregate route.  A resolution constraint based on prefix/mask can be
+   used to prevent such a resolution from being considered valid.  An
+   implementation MAY provide a set of configuration options for
+   resolution constraints.
 
    Another example of a resolution constraint is the "Resolution
    Scheme", defined in BGP Classful Transport [RFC9832].  The
    "Resolution Scheme" constrains the resolution of the NEXT_HOP to an
    ordered set of transport classes dictated by the intent (Mapping
    Community) attached to the route.
+
+
+
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                 [Page 9]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
 
 3.3.  Route resolvability condition
 
@@ -489,27 +513,19 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    *  The route resolvability check for the BGP NEXT_HOP MUST continue
       to be done.
 
-   *  In addition, the route resolvability criteria SHOULD be performed
-      based on the forwarding address.
+   *  In addition, the route resolvability criteria SHOULD be evaluated
+      using the path resolution tuple.
 
-   *  When resolving the forwarding address, look up SHOULD be performed
-      by applying the resolution constraints defined in Section 3.2.
+   *  The path resolution tuple SHOULD be resolved subject to the
+      applicable resolution constraints defined in Section 3.2.
 
-   The resolvability check based on the forwarding address MAY be
-   enabled through a configuration knob.
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026                [Page 9]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
+   The additional resolvability check based on the path resolution tuple
+   MAY be enabled through a configuration knob.
 
 3.4.  Internal cost determination
 
-   For a prefix P/m, different BGP paths may use different forwarding
-   addresses and contexts of various types.
+   For a prefix P/m, different BGP paths may use different path
+   resolution tuples.
 
          P/m
              Path1: NH=10.0.0.1 Color: 200
@@ -519,12 +535,12 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
                                 Figure 3
 
-   Costs retrieved from different types of forwarding addresses or
-   contexts may not be comparable because they are based on different
-   sets of rules.  For instance, path1 may leverage an SR policy (color
-   200, endpoint R1) optimizing for latency, so the cost of path1 will
-   reflect the latency to R1.  Path2 may use the IGP cost to R2.  Path3
-   may have no cost.  These values are not directly comparable.
+   Costs retrieved from different path resolution tuples may not be
+   comparable because they are based on different sets of rules.  For
+   instance, path1 may leverage an SR policy (color 200, endpoint R1)
+   optimizing for latency, so the cost of path1 will reflect the latency
+   to R1.  Path2 may use the IGP cost to R2.  Path3 may have no cost.
+   These values are not directly comparable.
 
    The issue of comparing costs of paths of various types is not new.
    In a regular IP routed network (without tunnels) that runs BGP, a
@@ -536,34 +552,44 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    not help when comparing BGP paths whose nexthops are resolved through
    different IGPs.
 
+
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 10]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
+
    In order to compare the paths, this document introduces the concept
-   of forwarding address preference.  The preference is a local
-   numerical value.  An implementation SHOULD pick the lowest value as
-   the most preferred.
+   of resolution-key preference.  The preference is a local numerical
+   value.  An implementation SHOULD pick the lowest value as the most
+   preferred.
 
    This document updates [RFC4271] Section 9.1.2.2 e) as follows:
 
-   *  Remove from consideration any routes with an highest forwarding
-      address preference value.  This preference MAY be retrieved from
-      the resolution lookup of the forwarding address or MAY be
-      configured locally.
+   *  Remove from consideration all routes whose resolution-key
+      preference is not the lowest value among the candidate routes.
+      This preference MAY be retrieved from resolution of the path
+      resolution tuple or MAY be configured locally.
 
-   *  For remaining paths, the interior cost of a route is determined by
-      the metric of the resolving route to the forwarding address
-      applying the resolution constraints defined in Section 3.2.  If
-      the forwarding address for a route is reachable, but no cost can
-      be determined, the cost SHOULD be set by default to the maximum
+   *  For remaining paths, the interior cost of a route is determined
+      only by the metric returned by resolution of the path resolution
+      tuple, applying the resolution constraints defined in Section 3.2.
+      If the path resolution tuple is resolvable, but no metric can be
+      determined, the cost SHOULD be set by default to the maximum
       allowed cost.
 
+   The resolvability, metric, and tracking state used for a BGP path
+   MUST refer to the same resolution of its path resolution tuple.  When
+   the resolution-key preference is retrieved from resolution, it MUST
+   refer to that same resolution.  An implementation MUST NOT combine
+   reachability from one resolution context with a metric from another
+   as if they described the same forwarding path.
 
-
-Vroonen, et al.         Expires 27 December 2026               [Page 10]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
-
-   Using forwarding preference and forwarding address-based cost SHOULD
-   be enabled through a configuration knob.
+   Using resolution-key preference and path-resolution-tuple-derived
+   cost SHOULD be enabled through a configuration knob.
 
    With the example above and the internal tables defined below, and
    considering lowest preference value as the most preferred one, BGP
@@ -583,6 +609,15 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
                                 Figure 4
 
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 11]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
+
      +===============+============+========+========================+
      | Prefix, Color | Preference | Metric | Forwarding data        |
      +===============+============+========+========================+
@@ -597,26 +632,6 @@ Internet-Draft        BGP nh selection enhancements            June 2026
      +===============+============+========+========================+
 
                     Table 4: IPv4 Color routing table
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 11]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
 
      +===============+============+========+========================+
      | Prefix        | Preference | Metric | Forwarding data        |
@@ -644,6 +659,21 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
                         Table 6: L2TP session table
 
+
+
+
+
+
+
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 12]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
+
       +==========================+==================================+
       | Type                     | Preference                       |
       +==========================+==================================+
@@ -657,37 +687,25 @@ Internet-Draft        BGP nh selection enhancements            June 2026
       |                          | 1000 if table provided no value  |
       +==========================+==================================+
 
-          Table 7: BGP forwarding address preference configuration
+            Table 7: BGP resolution-key preference configuration
 
 
-
-
-
-
-
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 12]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
-
-3.5.  Next hop and forwarding address tracking
+3.5.  Next hop and path resolution tracking
 
    A BGP speaker SHOULD track the resolvability of both the NEXT_HOP and
-   the forwarding address.  If either the NEXT_HOP or the forwarding
-   address becomes unresolvable or if the cost to reach either the
-   NEXT_HOP or the forwarding address changes, the BGP speaker MUST re-
-   evaluate the best path selection for all prefixes using the affected
-   NEXT_HOP or forwarding address.  This tracking MUST be done for all
-   paths, including the best path and non-best paths.
+   the path resolution tuple.  If either becomes unresolvable, or if the
+   metric returned by resolution of the path resolution tuple changes,
+   the BGP speaker MUST re-evaluate the best path selection for all
+   prefixes using the affected NEXT_HOP or path resolution tuple.
+   Tracking MUST distinguish path resolution tuples containing the same
+   resolution key but different resolution contexts, when such contexts
+   are present.  This tracking MUST be done for all paths, including the
+   best path and non-best paths.
 
 4.  Example
 
-   The example below illustrates the logic of forwarding address
-   preference and cost comparison.
+   The example below illustrates the logic of resolution-key preference
+   and cost comparison.
 
                         +-----+     (M=5)
                 P/m  -- | PE1 |----------------+
@@ -705,6 +723,13 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
                                  Figure 5
 
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 13]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
+
    In Figure 5, a prefix P/m is reachable by PE4 from PE1, PE2, PE3
    (with respectively NEXT_HOP N1, N2 and N3).  Considering that the
    network is a BGP free core, traffic must be tunneled between edge
@@ -713,22 +738,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    of the core.  RSVP-TE is used to provide traffic-engineering MPLS
    tunnels.  SR-MPLS is also used to provide best-effort reachability.
    BGP is configured to use the route preference (or administrative
-   distance) from table lookup as forwarding address preference.  RSVP-
-   TE is given a better route preference than SR-MPLS.  RSVP-TE tunnel
-   to PE3 cannot be established.
-
-
-
-
-
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 13]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
+   distance) from table lookup as resolution-key preference.  RSVP-TE is
+   given a better route preference than SR-MPLS.  RSVP-TE tunnel to PE3
+   cannot be established.
 
                  +========+==========+============+======+
                  | Prefix | Protocol | Preference | Cost |
@@ -747,11 +759,11 @@ Internet-Draft        BGP nh selection enhancements            June 2026
                  +========+==========+============+======+
                  | N1     | IS-IS SR | 110        | 10   |
                  +--------+----------+------------+------+
-                 | N1     | RSVP-TE  | 250        | 1000 |
+                 | N1     | RSVP-TE  | 50         | 1000 |
                  +--------+----------+------------+------+
                  | N2     | IS-IS SR | 110        | 15   |
                  +--------+----------+------------+------+
-                 | N2     | RSVP-TE  | 250        | 100  |
+                 | N2     | RSVP-TE  | 50         | 100  |
                  +--------+----------+------------+------+
                  | N3     | IS-IS SR | 110        | 20   |
                  +--------+----------+------------+------+
@@ -769,45 +781,33 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 14]
+Vroonen, et al.          Expires 7 January 2027                [Page 14]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
      P/m
        Path1:
          from PE1, NH=N1
-         cost 1000, forwarding address preference 250
+         cost 1000, resolution-key preference 50
 
        Path2:
          from PE2, NH=N2
-         cost 100, forwarding address preference 250
+         cost 100, resolution-key preference 50
 
        Path3:
-         from PE3, NH=NH3
-         cost 20, forwarding address preference 110
+         from PE3, NH=N3
+         cost 20, resolution-key preference 110
 
 
                                   Figure 6
 
-   PE4 will check the forwarding address preference of the paths.  PE4
-   will not consider the paths received from PE3 because the forwarding
-   address preference is lower than others.  Finally, PE4 will compare
-   the internal costs between paths from PE1 and PE2 as they have the
-   same preference and path from PE2 will be elected as best because it
-   has the lowest cost.
+   PE4 will check the resolution-key preference of the paths.  PE4 will
+   not consider the path received from PE3 because its resolution-key
+   preference is less preferred (a higher numerical value) than the
+   others.  Finally, PE4 will compare the internal costs between paths
+   from PE1 and PE2 as they have the same preference and path from PE2
+   will be elected as best because it has the lowest cost.
 
    As mentioned in Section 3.5, if the RSVP-TE tunnel to PE2 goes down,
    PE4 will re-evaluate the best path selection and will select the path
@@ -816,8 +816,8 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 5.  Example with Intent-Aware BGP Transport
 
-   This example illustrates the need for forwarding address preference
-   when intent-aware BGP transport technologies are deployed.  Both BGP
+   This example illustrates the need for resolution-key preference when
+   intent-aware BGP transport technologies are deployed.  Both BGP
    Classful Transport ([RFC9832]) and BGP Color-Aware Routing
    ([RFC9871]) can lead to situations where two paths for a prefix
    resolve through different transport mechanisms with incomparable
@@ -837,9 +837,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-Vroonen, et al.         Expires 27 December 2026               [Page 15]
+Vroonen, et al.          Expires 7 January 2027                [Page 15]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
    In Figure 7, PE3 receives a VPN prefix P/m from PE1 and PE2 with
@@ -893,9 +893,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-Vroonen, et al.         Expires 27 December 2026               [Page 16]
+Vroonen, et al.          Expires 7 January 2027                [Page 16]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
                  +========+==========+============+======+
@@ -909,7 +909,7 @@ Internet-Draft        BGP nh selection enhancements            June 2026
                       Table 11: Best-effort transport
                                tunnels on PE3
 
-   Without the forwarding address preference mechanism, PE3 would simply
+   Without the resolution-key preference mechanism, PE3 would simply
    compare the costs: 1000 (path via PE1, Gold) vs 15 (path via PE2,
    best-effort), and would select the path via PE2.  This is problematic
    because:
@@ -921,25 +921,24 @@ Internet-Draft        BGP nh selection enhancements            June 2026
       solely because the RSVP-TE metric is numerically higher than the
       IGP metric, even though these values are not comparable.
 
-   Using the forwarding address preference, PE3 retrieves the preference
+   Using the resolution-key preference, PE3 retrieves the preference
    value from the transport table lookup.  The Gold transport table
    provides a preference of 50, while the best-effort transport table
-   provides a preference of 110.  PE3 will first compare the forwarding
-   address preference values and remove from consideration any path with
-   the highest (least preferred) value.  Path2 (preference 110) is
-   removed.  PE3 selects path1 via PE1, which satisfies the Gold SLA
-   intent.
+   provides a preference of 110.  PE3 will first compare the resolution-
+   key preference values and remove from consideration any path with the
+   highest (least preferred) value.  Path2 (preference 110) is removed.
+   PE3 selects path1 via PE1, which satisfies the Gold SLA intent.
 
      P/m
        Path1:
          from PE1, NH=N1
          resolved via Gold transport (RSVP-TE)
-         cost 1000, forwarding address preference 50
+         cost 1000, resolution-key preference 50
 
        Path2:
          from PE2, NH=N2
          resolved via best-effort transport (SR-MPLS)
-         cost 15, forwarding address preference 110
+         cost 15, resolution-key preference 110
 
        => PE3 selects Path1 (lower preference value = more preferred)
 
@@ -949,9 +948,10 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 
 
-Vroonen, et al.         Expires 27 December 2026               [Page 17]
+
+Vroonen, et al.          Expires 7 January 2027                [Page 17]
 
-Internet-Draft        BGP nh selection enhancements            June 2026
+Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 6.  Operational Considerations
@@ -961,9 +961,9 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    not aware of the BGP service routes.  For instance, in SRv6 service
    cases, the SRv6 encapsulation using the advertised SID as destination
    carries traffic down to the node that knows about the service route.
-   Determining the internal cost by using the forwarding address (tunnel
-   endpoint, SRv6 SID, ...) makes sense in these cases as it reflects
-   the end-to-end cost.
+   Using the metric returned by resolution of the path resolution tuple
+   as the internal cost makes sense in these cases because the
+   resolution describes the end-to-end forwarding path.
 
    However, there are cases where the tunnel does not terminate on the
    service egress.  One example is a service route advertised with a
@@ -973,26 +973,42 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    cases, the tail node of the tunnel must have routing entries for the
    service routes to ensure end-to-end reachability.
 
-   When determining the internal cost using the forwarding address in
-   these cases, the retrieved cost may not reflect the end-to-end path.
-   However, using the NEXT_HOP address would not necessarily provide a
-   better view: it would still give an inaccurate picture of distances
-   from a traffic forwarding perspective, since the forwarding path does
-   not follow the IGP-routed path.  Additionally, operators commonly
-   manipulate the NEXT_HOP through routing policies, so there is no
-   guarantee that the NEXT_HOP address correctly reflects the real
-   egress node.  Hence, using the forwarding address in cases where the
-   tunnel tail is not the service egress is not worse compared to using
-   the NEXT_HOP.
+   In these cases, the metric returned by resolution of the path
+   resolution tuple may not reflect the end-to-end path.  The
+   independently required NEXT_HOP resolution is not a second internal-
+   cost input.  Even if its metric were substituted, it would not
+   necessarily provide a better view: it would still give an inaccurate
+   picture of distances from a traffic forwarding perspective, since the
+   forwarding path does not follow the IGP-routed path.  Additionally,
+   operators commonly manipulate the NEXT_HOP through routing policies,
+   so there is no guarantee that the NEXT_HOP address correctly reflects
+   the real egress node.  Hence, the metric returned by resolution of
+   the path resolution tuple when the tunnel tail is not the service
+   egress is no less representative than such a hypothetical NEXT_HOP-
+   derived metric.
 
-   This document defines mechanisms that modify the BGP best path
-   selection process defined in [RFC4271].  Consequently, the potential
-   impact on routing loops needs to be analyzed.
+   This document specifies path resolution inputs used by BGP route
+   selection, including resolvability, preference, and internal cost.
+   Consequently, the potential impact on routing loops needs to be
+   analyzed.
 
    The mechanisms described in this document are typically deployed in
    environments utilizing tunneling technologies (such as MPLS or SRv6).
-   In these scenarios, the BGP path selection determines the specific
-   Forwarding Address used for encapsulation.
+   In these scenarios, BGP path selection determines the path resolution
+   tuple whose resolution supplies the forwarding information used for
+   encapsulation.
+
+
+
+
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 18]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
 
    When the traffic is encapsulated at the ingress router, intermediate
    nodes forward packets based solely on the outer transport header
@@ -1000,15 +1016,6 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    selection criteria are enforced only at the ingress, preventing
    forwarding loops that might otherwise arise from inconsistent policy
    decisions on intermediate nodes.
-
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 18]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
 
    To illustrate this loop prevention, consider the following topology
    where PE1, PE2, and PE3 provide reachability to Prefix X.
@@ -1041,11 +1048,23 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    also had a conflicting policy.
 
    However, in a tunneling paradigm, PE1 encapsulates the packet with an
-   outer header (e.g., an SRv6 SID or MPLS label) targeting PE2's
-   Forwarding Address.  When the packet arrives at Router P, P only
+   outer header (e.g., an SRv6 SID or MPLS label) using forwarding
+   information returned by resolution of the selected path's path
+   resolution tuple.  When the packet arrives at Router P, P only
    evaluates the outer header and forwards the packet along the IGP
    shortest path to PE2.  Router P's BGP policy regarding Prefix X is
    never invoked for in-flight traffic.
+
+
+
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 19]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
 
    Nevertheless, to ensure predictable routing behavior and simplify
    troubleshooting, it is recommended that network operators maintain a
@@ -1057,15 +1076,6 @@ Internet-Draft        BGP nh selection enhancements            June 2026
    This document and [I-D.ietf-idr-bgp-bestpath-selection-criteria] are
    complementary.  Their relationship can be summarized as follows:
 
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 19]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
-
    *  Scope: [I-D.ietf-idr-bgp-bestpath-selection-criteria] performs the
       resolvability check only; this document also covers internal cost
       determination and path preference.
@@ -1074,14 +1084,17 @@ Internet-Draft        BGP nh selection enhancements            June 2026
       MPLS-centric; this document is generic and applies to MPLS, SR
       Policy, SRv6 and intent-aware BGP transport.
 
-   *  This document introduces the forwarding address, decoupling path
-      selection from the NEXT_HOP.
+   *  This document introduces the path resolution tuple, comprising a
+      resolution key and an optional resolution context, while
+      continuing to require BGP NEXT_HOP resolvability.
 
-   *  This document introduces the forwarding address preference to
-      compare paths of non-comparable types.
+   *  This document introduces the resolution-key preference to order
+      BGP paths resolved through path resolution tuples whose costs are
+      not directly comparable.
 
-   *  This document derives the internal cost from the forwarding
-      address, not from the NEXT_HOP only.
+   *  This document derives the internal cost only from resolution of
+      the path resolution tuple.  The independently required BGP
+      NEXT_HOP check contributes resolvability, not a second cost.
 
    *  The MPLS case covered by
       [I-D.ietf-idr-bgp-bestpath-selection-criteria] is one instance of
@@ -1093,15 +1106,21 @@ Internet-Draft        BGP nh selection enhancements            June 2026
 
 9.  Security Considerations
 
-   This document modifies BGP route selection process by using data
-   other than the next-hop address to perform the resolvability check as
-   well as to compute the internal cost.  This does not add any security
-   consideration compared to using the existing NEXT_HOP defined in
-   [RFC4271].
+   This document uses path resolution information other than the next-
+   hop address to provide resolvability and internal-cost inputs to BGP
+   route selection.  This does not add any security consideration
+   compared to using the existing NEXT_HOP defined in [RFC4271].
 
 10.  References
 
 10.1.  Normative References
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 20]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
               Requirement Levels", BCP 14, RFC 2119,
@@ -1112,15 +1131,6 @@ Internet-Draft        BGP nh selection enhancements            June 2026
               Border Gateway Protocol 4 (BGP-4)", RFC 4271,
               DOI 10.17487/RFC4271, January 2006,
               <https://www.rfc-editor.org/info/rfc4271>.
-
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 20]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
 
    [RFC4364]  Rosen, E. and Y. Rekhter, "BGP/MPLS IP Virtual Private
               Networks (VPNs)", RFC 4364, DOI 10.17487/RFC4364, February
@@ -1141,11 +1151,6 @@ Internet-Draft        BGP nh selection enhancements            June 2026
               DOI 10.17487/RFC9012, April 2021,
               <https://www.rfc-editor.org/info/rfc9012>.
 
-   [RFC9246]  van Brandenburg, R., Leung, K., and P. Sorber, "URI
-              Signing for Content Delivery Network Interconnection
-              (CDNI)", RFC 9246, DOI 10.17487/RFC9246, June 2022,
-              <https://www.rfc-editor.org/info/rfc9246>.
-
    [RFC9252]  Dawra, G., Ed., Talaulikar, K., Ed., Raszuk, R., Decraene,
               B., Zhuang, S., and J. Rabadan, "BGP Overlay Services
               Based on Segment Routing over IPv6 (SRv6)", RFC 9252,
@@ -1162,21 +1167,23 @@ Internet-Draft        BGP nh selection enhancements            June 2026
               DOI 10.17487/RFC9350, February 2023,
               <https://www.rfc-editor.org/info/rfc9350>.
 
+
+
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 21]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
+
    [RFC9832]  Vairavakkalai, K., Ed. and N. Venkataraman, Ed., "BGP
               Classful Transport Planes", RFC 9832,
               DOI 10.17487/RFC9832, September 2025,
               <https://www.rfc-editor.org/info/rfc9832>.
 
 10.2.  Informative References
-
-
-
-
-
-Vroonen, et al.         Expires 27 December 2026               [Page 21]
-
-Internet-Draft        BGP nh selection enhancements            June 2026
-
 
    [I-D.ietf-idr-bgp-bestpath-selection-criteria]
               Asati, R., "BGP Bestpath Selection Criteria Enhancement",
@@ -1218,6 +1225,15 @@ Authors' Addresses
    Email: slitkows@cisco.com
 
 
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 22]
+
+Internet-Draft        BGP nh selection enhancements            July 2026
+
+
    Kandhla Chandi
    Bell Canada
    Email: kandhla.chandi@bell.ca
@@ -1228,5 +1244,45 @@ Authors' Addresses
    Email: jie.dong@huawei.com
 
 
+   Israel Means
+   AT&T
+   Email: israel.means@att.com
 
-Vroonen, et al.         Expires 27 December 2026               [Page 22]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Vroonen, et al.          Expires 7 January 2027                [Page 23]
