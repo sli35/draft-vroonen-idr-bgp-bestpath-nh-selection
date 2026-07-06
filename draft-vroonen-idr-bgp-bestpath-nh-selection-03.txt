@@ -199,11 +199,11 @@ Internet-Draft        BGP nh selection enhancements            July 2026
       take into account that the cost associated with the SRv6 SID may
       be different from the cost associated with the BGP next-hop.
 
-   This document defines a generic model for deriving path resolution
-   inputs to BGP route selection for all these use cases.  BGP compares
-   candidate paths, while the route-resolution layer resolves the
-   applicable path resolution tuple and supplies the resulting
-   resolvability, preference, metric, and tracking state.
+   This document defines a common path-resolution model for these use
+   cases.  Each candidate path is associated with a path resolution
+   tuple whose resolution provides inputs to BGP route selection.  BGP
+   uses these inputs to compare candidate paths and tracks resolution
+   changes that may require the selection to be reevaluated.
 
 1.1.  Requirements Language
 
