@@ -277,21 +277,21 @@
     <section title="Path Resolution Inputs to BGP Route Selection">
         <section title="Path resolution tuple">
             <t>
-            This document defines a path resolution tuple as a forwarding resolution key and, when required, a resolution context. The forwarding resolution key identifies the object resolved for a BGP path. For the mechanisms defined in this document, this key is an IP address, hereafter called the forwarding address. It may be the BGP NEXT_HOP or a different address signaled with the path, such as a Tunnel Egress Endpoint or an SRv6 Service SID.
+            This document defines a path resolution tuple as a resolution key and, when required, a resolution context. The resolution key identifies the object to be resolved for a BGP path. For the mechanisms defined in this document, the resolution key is an IP address. It may be the BGP NEXT_HOP or a different address signaled with the path, such as a Tunnel Egress Endpoint or an SRv6 Service SID.
             </t>
             <t>
-            The following data already defined in BGP standards SHOULD be considered as forwarding resolution keys:
+            The following data already defined in BGP standards SHOULD be considered as resolution keys:
             </t>
             <ul>
                 <li>The Tunnel Egress Endpoint Sub-TLV contained in Tunnel Encapsulation attribute defined in <xref target="RFC9012"/></li>
                 <li>SRv6 SID Information Sub-TLV contained within L3 or L2 SRv6 SID defined in <xref target="RFC9252"/></li>
             </ul>
             <t>
-            Unless a BGP update contains another type of forwarding address, the BGP NEXT_HOP is considered as the forwarding address.
+            Unless a BGP update contains another type of resolution key, the BGP NEXT_HOP is considered as the resolution key.
             </t>
             <t>
-            The forwarding address MAY be complemented by a forwarding context. When present, the forwarding context is the resolution context component of the path resolution tuple and identifies or constrains the resolution procedure and datastore used to resolve the forwarding resolution key.
-            The following attributes defined in BGP standards are examples of forwarding context:
+            The resolution key MAY be complemented by a resolution context. When present, the resolution context identifies or parameterizes the resolution procedure and datastore used to resolve the resolution key.
+            The following attributes defined in BGP standards are examples of resolution contexts:
             </t>
             <ul>
                 <li>The Tunnel Encapsulation attribute defined in <xref target="RFC9012"/></li>
@@ -299,26 +299,24 @@
                 <li>The SRv6 Sub-TLV and Sub-sub-TLV contained within L3 or L2 SRv6 SID TLV as defined in <xref target="RFC9252"/> other than the SID itself</li>
             </ul>
             <t>
-            Two path resolution tuples containing the same forwarding resolution key but different resolution contexts are distinct resolution requests. For example, {NEXT_HOP, Color Extended Community} may identify an SR Policy resolution. An SRv6 Service SID can be used directly as the forwarding resolution key without an additional resolution context.
+            Two path resolution tuples containing the same resolution key but differing in resolution context, including whether a context is present, are distinct resolution requests. For example, in the SR Policy use case above, {N1, C1} requests resolution through SR Policy (C1, N1), whereas {N1} requests resolution of next hop N1 without a route-carried resolution context.
             </t>
             <t>
-            Each new BGP extension SHOULD specify whether an address carried by the extension is a forwarding resolution key and, when applicable, how its resolution context is derived. The procedures defined in the next section SHOULD apply for any new forwarding resolution key without having to redefine them.
+            Each new BGP extension SHOULD specify whether an address carried by the extension is a resolution key and, when applicable, how its resolution context is derived. The procedures defined in the next section SHOULD apply for any new resolution key without having to redefine them.
             </t>
         </section>
 
         <section anchor="lookup-in-table" title="Resolution constraints">
         <t>
-        When the path resolution tuple is identified for a BGP route, resolution uses the forwarding resolution key together with its resolution context, when present.
-        Depending on the forwarding resolution key and its resolution context, the implementation may need to ensure that the key is resolved through a specific type of route in a specific table or datastore.
-        This resolution constraint may come from the forwarding context and/or may be configured locally.
-        In the remainder of this document, resolving the forwarding address means resolving the forwarding resolution key together with its resolution context, when present.
+        When a path resolution tuple is identified for a BGP route, the resolver uses the resolution key together with its resolution context, when present.
+        Resolution constraints are rules applied when resolving a path resolution tuple. They restrict which routes or datastores may provide a valid resolution. These constraints are not additional components of the path resolution tuple and may be derived from the resolution context or configured locally.
         </t>
         <t>
-        In some cases, operator may want to enforce that the forwarding address is resolved through a specific type of route.
+        In some cases, operator may want to enforce that the resolution key is resolved through a specific type of route.
         This can be achieved by configuring a local resolution constraint.
         Reusing the example defined in <xref target="mpls-path-use-case"/>, if we consider an IPv4 unicast BGP service carried over a BGP free-core, the BGP NEXT_HOP must be reachable through a tunnel to allow the end-to-end packet delivery.
         Such a case cannot be derived from the BGP update context and BGP must be configured to resolve the NEXT_HOP only through tunnels (of any or specific types). 
-        Similarly, when aggregate routes are present in the routing table, user may want to prevent the forwarding address (which is a specific route) to be resolved over the aggregate routes. A resolution constraint based on prefix/mask can be done to avoid such resolution to be valid.
+        Similarly, when aggregate routes are present in the routing table, a user may want to prevent a resolution key that identifies a more-specific destination from being resolved over an aggregate route. A resolution constraint based on prefix/mask can be used to prevent such a resolution from being considered valid.
         An implementation MAY provide a set of configuration options for resolution constraints.
         </t>
         <t>
@@ -337,11 +335,11 @@
                 In addition, the route resolvability criteria SHOULD be evaluated using the path resolution tuple.
             </li>
             <li>
-                When resolving the path resolution tuple, the forwarding resolution key SHOULD be looked up using its resolution context, when present, and the resolution constraints defined in <xref target="lookup-in-table"/>.
+                The path resolution tuple SHOULD be resolved subject to the applicable resolution constraints defined in <xref target="lookup-in-table"/>.
             </li>
         </ul>
         <t>
-        The resolvability check based on the forwarding address MAY be enabled through a configuration knob.
+        The additional resolvability check based on the path resolution tuple MAY be enabled through a configuration knob.
         </t>
         </section>
         <section title="Internal cost determination">
@@ -364,24 +362,24 @@
         The issue of comparing costs of paths of various types is not new. In a regular IP routed network (without tunnels) that runs BGP, a prefix P/m may have paths with nexthops reachable through different IGPs or IGP route types, where costs computed by each IGP may use a different reference. While the routing table can tie-break across different protocols or route types for a single prefix using an internal preference (administrative distance) mechanism, this does not help when comparing BGP paths whose nexthops are resolved through different IGPs.
         </t>
         <t>
-        In order to compare the paths, this document introduces the concept of forwarding address preference. The preference is a local numerical value. An implementation SHOULD pick the lowest value as the most preferred.
+        In order to compare the paths, this document introduces the concept of resolution-key preference. The preference is a local numerical value. An implementation SHOULD pick the lowest value as the most preferred.
         </t>
         <t>
         This document updates <xref target="RFC4271"/> Section 9.1.2.2 e) as follows:
         </t>
         <ul>
             <li>
-            Remove from consideration all routes whose forwarding address preference is not the lowest value among the candidate routes. This preference MAY be retrieved from resolution of the path resolution tuple or MAY be configured locally.
+            Remove from consideration all routes whose resolution-key preference is not the lowest value among the candidate routes. This preference MAY be retrieved from resolution of the path resolution tuple or MAY be configured locally.
             </li>
             <li>
-            For remaining paths, the interior cost of a route is determined by the metric returned by resolution of the path resolution tuple, applying the resolution constraints defined in <xref target="lookup-in-table"/>. If the forwarding resolution key for a route is reachable, but no cost can be determined, the cost SHOULD be set by default to the maximum allowed cost.
+            For remaining paths, the interior cost of a route is determined only by the metric returned by resolution of the path resolution tuple, applying the resolution constraints defined in <xref target="lookup-in-table"/>. If the path resolution tuple is resolvable, but no metric can be determined, the cost SHOULD be set by default to the maximum allowed cost.
             </li>
         </ul>
         <t>
-        The resolvability, metric, and tracking state used for a BGP path MUST refer to the same resolution of its path resolution tuple. When the forwarding address preference is retrieved from resolution, it MUST refer to that same resolution. An implementation MUST NOT combine reachability from one resolution context with a metric from another as if they described the same forwarding path.
+        The resolvability, metric, and tracking state used for a BGP path MUST refer to the same resolution of its path resolution tuple. When the resolution-key preference is retrieved from resolution, it MUST refer to that same resolution. An implementation MUST NOT combine reachability from one resolution context with a metric from another as if they described the same forwarding path.
         </t>
         <t>
-        Using forwarding preference and forwarding address-based cost SHOULD be enabled through a configuration knob.
+        Using resolution-key preference and path-resolution-tuple-derived cost SHOULD be enabled through a configuration knob.
         </t>
         <t>
         With the example above and the internal tables defined below, and considering lowest preference value as the most preferred one, BGP would select Path2 as best. Path2 and Path4 have the lowest preference (10), then Path2 has the lowest internal cost (12).
@@ -434,7 +432,7 @@
           </tbody>
         </table>
         <table>
-          <name>BGP forwarding address preference configuration</name>
+          <name>BGP resolution-key preference configuration</name>
           <thead>
             <tr><th>Type</th><th>Preference</th></tr>
           </thead>
@@ -451,7 +449,7 @@
         </section>
         <section title="Next hop and path resolution tracking" anchor="address-tracking">
         <t>
-        A BGP speaker SHOULD track the resolvability of both the NEXT_HOP and the path resolution tuple. If either becomes unresolvable, or if the cost returned for either resolution changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or path resolution tuple. Tracking MUST distinguish path resolution tuples containing the same forwarding resolution key but different resolution contexts, when such contexts are present.
+        A BGP speaker SHOULD track the resolvability of both the NEXT_HOP and the path resolution tuple. If either becomes unresolvable, or if the metric returned by resolution of the path resolution tuple changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or path resolution tuple. Tracking MUST distinguish path resolution tuples containing the same resolution key but different resolution contexts, when such contexts are present.
         This tracking MUST be done for all paths, including the best path and non-best paths.
         </t>
         </section>
@@ -459,7 +457,7 @@
 
     <section title="Example">
       <t>
-      The example below illustrates the logic of forwarding address preference and cost comparison.
+      The example below illustrates the logic of resolution-key preference and cost comparison.
       </t>
       <figure anchor="enhanced-bgp-nh-selection">
       <artwork><![CDATA[
@@ -481,7 +479,7 @@
       <t>
       In <xref target="enhanced-bgp-nh-selection"/>, a prefix P/m is reachable by PE4 from PE1, PE2, PE3 (with respectively NEXT_HOP N1, N2 and N3). Considering that the network is a BGP free core, traffic must be tunneled between edge devices.
       Traffic destined to P/m is of high bandwidth and requires traffic-engineering to spread the traffic across the available links of the core. RSVP-TE is used to provide traffic-engineering MPLS tunnels.
-      SR-MPLS is also used to provide best-effort reachability. BGP is configured to use the route preference (or administrative distance) from table lookup as forwarding address preference. RSVP-TE is given a better route preference than SR-MPLS. 
+      SR-MPLS is also used to provide best-effort reachability. BGP is configured to use the route preference (or administrative distance) from table lookup as resolution-key preference. RSVP-TE is given a better route preference than SR-MPLS.
       RSVP-TE tunnel to PE3 cannot be established.
       </t>
       <table>
@@ -519,20 +517,20 @@
   P/m
     Path1:
       from PE1, NH=N1
-      cost 1000, forwarding address preference 50
+      cost 1000, resolution-key preference 50
 
     Path2:
       from PE2, NH=N2
-      cost 100, forwarding address preference 50
+      cost 100, resolution-key preference 50
 
     Path3:
       from PE3, NH=N3
-      cost 20, forwarding address preference 110
+      cost 20, resolution-key preference 110
 
       </artwork>
       </figure>
       <t>
-      PE4 will check the forwarding address preference of the paths. PE4 will not consider the path received from PE3 because its forwarding address preference is less preferred (a higher numerical value) than the others.
+      PE4 will check the resolution-key preference of the paths. PE4 will not consider the path received from PE3 because its resolution-key preference is less preferred (a higher numerical value) than the others.
       Finally, PE4 will compare the internal costs between paths from PE1 and PE2 as they have the same preference and path from PE2 will be elected as best because it has the lowest cost.
       </t>
       <t>
@@ -542,7 +540,7 @@
 
     <section title="Example with Intent-Aware BGP Transport">
       <t>
-      This example illustrates the need for forwarding address preference when intent-aware BGP transport technologies are deployed. Both BGP Classful Transport (<xref target="RFC9832"/>) and BGP Color-Aware Routing (<xref target="RFC9871"/>) can lead to situations where two paths for a prefix resolve through different transport mechanisms with incomparable costs.
+      This example illustrates the need for resolution-key preference when intent-aware BGP transport technologies are deployed. Both BGP Classful Transport (<xref target="RFC9832"/>) and BGP Color-Aware Routing (<xref target="RFC9871"/>) can lead to situations where two paths for a prefix resolve through different transport mechanisms with incomparable costs.
       </t>
       <figure anchor="intent-transport-example">
       <artwork><![CDATA[
@@ -597,14 +595,14 @@
         </tbody>
       </table>
       <t>
-      Without the forwarding address preference mechanism, PE3 would simply compare the costs: 1000 (path via PE1, Gold) vs 15 (path via PE2, best-effort), and would select the path via PE2. This is problematic because:
+      Without the resolution-key preference mechanism, PE3 would simply compare the costs: 1000 (path via PE1, Gold) vs 15 (path via PE2, best-effort), and would select the path via PE2. This is problematic because:
       </t>
       <ul>
         <li>The path via PE2 uses best-effort transport, violating the Gold SLA intent.</li>
         <li>The path via PE1, which satisfies the Gold SLA, is discarded solely because the RSVP-TE metric is numerically higher than the IGP metric, even though these values are not comparable.</li>
       </ul>
       <t>
-      Using the forwarding address preference, PE3 retrieves the preference value from the transport table lookup. The Gold transport table provides a preference of 50, while the best-effort transport table provides a preference of 110. PE3 will first compare the forwarding address preference values and remove from consideration any path with the highest (least preferred) value. Path2 (preference 110) is removed. PE3 selects path1 via PE1, which satisfies the Gold SLA intent.
+      Using the resolution-key preference, PE3 retrieves the preference value from the transport table lookup. The Gold transport table provides a preference of 50, while the best-effort transport table provides a preference of 110. PE3 will first compare the resolution-key preference values and remove from consideration any path with the highest (least preferred) value. Path2 (preference 110) is removed. PE3 selects path1 via PE1, which satisfies the Gold SLA intent.
       </t>
       <figure>
       <artwork>
@@ -613,12 +611,12 @@
     Path1:
       from PE1, NH=N1
       resolved via Gold transport (RSVP-TE)
-      cost 1000, forwarding address preference 50
+      cost 1000, resolution-key preference 50
 
     Path2:
       from PE2, NH=N2
       resolved via best-effort transport (SR-MPLS)
-      cost 15, forwarding address preference 110
+      cost 15, resolution-key preference 110
 
     => PE3 selects Path1 (lower preference value = more preferred)
 
@@ -629,19 +627,19 @@
     <section anchor="Operational">
       <name>Operational Considerations</name>
       <t>
-      In most cases, tunnels carry traffic from the ingress to the egress node that advertised the BGP service route, as transit routers are not aware of the BGP service routes. For instance, in SRv6 service cases, the SRv6 encapsulation using the advertised SID as destination carries traffic down to the node that knows about the service route. Determining the internal cost by using the forwarding address (tunnel endpoint, SRv6 SID, ...) makes sense in these cases as it reflects the end-to-end cost.
+      In most cases, tunnels carry traffic from the ingress to the egress node that advertised the BGP service route, as transit routers are not aware of the BGP service routes. For instance, in SRv6 service cases, the SRv6 encapsulation using the advertised SID as destination carries traffic down to the node that knows about the service route. Using the metric returned by resolution of the path resolution tuple as the internal cost makes sense in these cases because the resolution describes the end-to-end forwarding path.
       </t>
       <t>
       However, there are cases where the tunnel does not terminate on the service egress. One example is a service route advertised with a color allowing for usage of a null endpoint policy. Another example is a service route advertised with a Tunnel Encapsulation attribute using a tunnel endpoint different from the service egress. In such cases, the tail node of the tunnel must have routing entries for the service routes to ensure end-to-end reachability.
       </t>
       <t>
-      When determining the internal cost using the forwarding address in these cases, the retrieved cost may not reflect the end-to-end path. However, using the NEXT_HOP address would not necessarily provide a better view: it would still give an inaccurate picture of distances from a traffic forwarding perspective, since the forwarding path does not follow the IGP-routed path. Additionally, operators commonly manipulate the NEXT_HOP through routing policies, so there is no guarantee that the NEXT_HOP address correctly reflects the real egress node. Hence, using the forwarding address in cases where the tunnel tail is not the service egress is not worse compared to using the NEXT_HOP.
+      In these cases, the metric returned by resolution of the path resolution tuple may not reflect the end-to-end path. The independently required NEXT_HOP resolution is not a second internal-cost input. Even if its metric were substituted, it would not necessarily provide a better view: it would still give an inaccurate picture of distances from a traffic forwarding perspective, since the forwarding path does not follow the IGP-routed path. Additionally, operators commonly manipulate the NEXT_HOP through routing policies, so there is no guarantee that the NEXT_HOP address correctly reflects the real egress node. Hence, the metric returned by resolution of the path resolution tuple when the tunnel tail is not the service egress is no less representative than such a hypothetical NEXT_HOP-derived metric.
       </t>
       <t>
       This document specifies path resolution inputs used by BGP route selection, including resolvability, preference, and internal cost. Consequently, the potential impact on routing loops needs to be analyzed.
       </t>
       <t>
-      The mechanisms described in this document are typically deployed in environments utilizing tunneling technologies (such as MPLS or SRv6). In these scenarios, the BGP path selection determines the specific Forwarding Address used for encapsulation.
+      The mechanisms described in this document are typically deployed in environments utilizing tunneling technologies (such as MPLS or SRv6). In these scenarios, BGP path selection determines the path resolution tuple whose resolution supplies the forwarding information used for encapsulation.
       </t>
       <t>
       When the traffic is encapsulated at the ingress router, intermediate nodes forward packets based solely on the outer transport header rather than the inner destination. Consequently, the specific BGP selection criteria are enforced only at the ingress, preventing forwarding loops that might otherwise arise from inconsistent policy decisions on intermediate nodes.
@@ -674,7 +672,7 @@
       In a hop-by-hop IP routing paradigm, PE1 would forward a bare IP packet to P. Router P would perform a lookup on the inner destination IP (Prefix X) and deflect the packet toward PE3, directly contradicting PE1's decision and potentially causing a loop if PE3 also had a conflicting policy. 
       </t>
       <t>
-      However, in a tunneling paradigm, PE1 encapsulates the packet with an outer header (e.g., an SRv6 SID or MPLS label) targeting PE2's Forwarding Address. When the packet arrives at Router P, P only evaluates the outer header and forwards the packet along the IGP shortest path to PE2. Router P's BGP policy regarding Prefix X is never invoked for in-flight traffic.
+      However, in a tunneling paradigm, PE1 encapsulates the packet with an outer header (e.g., an SRv6 SID or MPLS label) using forwarding information returned by resolution of the selected path's path resolution tuple. When the packet arrives at Router P, P only evaluates the outer header and forwards the packet along the IGP shortest path to PE2. Router P's BGP policy regarding Prefix X is never invoked for in-flight traffic.
       </t>
       <t>
       Nevertheless, to ensure predictable routing behavior and simplify troubleshooting, it is recommended that network operators maintain a consistent configuration of these selection criteria across all BGP speakers within the same administrative domain.
@@ -689,9 +687,9 @@
       <ul>
         <li>Scope: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> performs the resolvability check only; this document also covers internal cost determination and path preference.</li>
         <li>Generality: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is MPLS-centric; this document is generic and applies to MPLS, SR Policy, SRv6 and intent-aware BGP transport.</li>
-        <li>This document introduces the path resolution tuple, comprising a forwarding resolution key and an optional resolution context, while continuing to require BGP NEXT_HOP resolvability.</li>
-        <li>This document introduces the forwarding address preference to order BGP paths resolved through path resolution tuples whose costs are not directly comparable.</li>
-        <li>This document derives the internal cost from resolution of the path resolution tuple rather than solely from resolution of the BGP NEXT_HOP.</li>
+        <li>This document introduces the path resolution tuple, comprising a resolution key and an optional resolution context, while continuing to require BGP NEXT_HOP resolvability.</li>
+        <li>This document introduces the resolution-key preference to order BGP paths resolved through path resolution tuples whose costs are not directly comparable.</li>
+        <li>This document derives the internal cost only from resolution of the path resolution tuple. The independently required BGP NEXT_HOP check contributes resolvability, not a second cost.</li>
         <li>The MPLS case covered by <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is one instance of the generic mechanism defined here.</li>
       </ul>
     </section>
