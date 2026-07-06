@@ -13,7 +13,7 @@
 <rfc
   xmlns:xi="http://www.w3.org/2001/XInclude"
   category="std"
-  docName="draft-vroonen-idr-bgp-bestpath-nh-selection-02"
+  docName="draft-vroonen-idr-bgp-bestpath-nh-selection-03"
   ipr="trust200902"
   obsoletes=""
   updates="4271"
@@ -24,7 +24,7 @@
   <front>
     <title abbrev="BGP nh selection enhancements">BGP best path next-hop selection enhancements</title>
 
-    <seriesInfo name="Internet-Draft" value="draft-vroonen-idr-bgp-bestpath-nh-selection-02"/>
+    <seriesInfo name="Internet-Draft" value="draft-vroonen-idr-bgp-bestpath-nh-selection-03"/>
 
     <author fullname="Olivier Vroonen" initials="O." role="editor" surname="Vroonen">
       <organization>Cisco</organization>
@@ -213,7 +213,7 @@
         </table>
         <t>
         Considering that PE3 may take into account the cost of the SR policy and then picks up the path from PE2 as best. 
-        If the SR Policy (C1, N2) is down or not present, and considering that color C1 is using CO-flag equal to 00 (<xref target="RFC9246"/> Section 8.8.1), path from PE2 is authorized to use IGP path to next-hop N2 (fallback to IGP path via P1 with cost=6) as there is no policy (C1, N2) available.
+        If the SR Policy (C1, N2) is down or not present, and considering that color C1 uses Color-Only Type 0 (bits 00), as defined in <xref target="RFC9830"/> Section 3, the steering procedures in <xref target="RFC9256"/> Section 8.8.1 authorize the path from PE2 to use the IGP path to next-hop N2 (fallback to the IGP path via P1 with cost=6) when there is no policy (C1, N2) available.
         This situation has multiple drawbacks:
         </t>
         <ul>
@@ -269,12 +269,12 @@
     </section>
     
     <section title="Modification of the BGP route selection process">
-        <section title="Forwarding address">
+        <section title="Path resolution tuple">
             <t>
-            This document defines the forwarding address as the IP address of the next router to which packets are sent. The forwarding address may come from the NEXT_HOP or a different address which has been signaled in a different attribute along with the path.
+            This document defines a path resolution tuple as a forwarding resolution key and, when required, a resolution context. The forwarding resolution key identifies the object resolved for a BGP path. For the mechanisms defined in this document, this key is an IP address, hereafter called the forwarding address. It may be the BGP NEXT_HOP or a different address signaled with the path, such as a Tunnel Egress Endpoint or an SRv6 Service SID.
             </t>
             <t>
-            The following data already defined in BGP standards SHOULD be considered as forwarding addresses:
+            The following data already defined in BGP standards SHOULD be considered as forwarding resolution keys:
             </t>
             <ul>
                 <li>The Tunnel Egress Endpoint Sub-TLV contained in Tunnel Encapsulation attribute defined in <xref target="RFC9012"/></li>
@@ -284,7 +284,7 @@
             Unless a BGP update contains another type of forwarding address, the BGP NEXT_HOP is considered as the forwarding address.
             </t>
             <t>
-            The forwarding address MAY be complemented by a forwarding context. The forwarding context characterizes more the forwarding path to be used.
+            The forwarding address MAY be complemented by a forwarding context. When present, the forwarding context is the resolution context component of the path resolution tuple and identifies or constrains the resolution procedure and datastore used to resolve the forwarding resolution key.
             The following attributes defined in BGP standards are examples of forwarding context:
             </t>
             <ul>
@@ -293,15 +293,19 @@
                 <li>The SRv6 Sub-TLV and Sub-sub-TLV contained within L3 or L2 SRv6 SID TLV as defined in <xref target="RFC9252"/> other than the SID itself</li>
             </ul>
             <t>
-            Each new BGP extension SHOULD specify if an address carried by the extension must be considered as a forwarding address. The procedures defined in the next section SHOULD apply for any new forwarding address defined without having to redefine them.
+            Two path resolution tuples containing the same forwarding resolution key but different resolution contexts are distinct resolution requests. For example, {NEXT_HOP, Color Extended Community} may identify an SR Policy resolution. An SRv6 Service SID can be used directly as the forwarding resolution key without an additional resolution context.
+            </t>
+            <t>
+            Each new BGP extension SHOULD specify whether an address carried by the extension is a forwarding resolution key and, when applicable, how its resolution context is derived. The procedures defined in the next section SHOULD apply for any new forwarding resolution key without having to redefine them.
             </t>
         </section>
 
         <section anchor="lookup-in-table" title="Resolution constraints">
         <t>
-        When the forwarding address and its context are identified for a BGP route, the implementation may know the required characteristics of the route to be used to resolve the forwarding address.
-        Depending on the type of forwarding address and context, the implementation may need to ensure that the forwarding address is resolved through a specific type of route in a specific table.
+        When the path resolution tuple is identified for a BGP route, resolution uses the forwarding resolution key together with its resolution context, when present.
+        Depending on the forwarding resolution key and its resolution context, the implementation may need to ensure that the key is resolved through a specific type of route in a specific table or datastore.
         This resolution constraint may come from the forwarding context and/or may be configured locally.
+        In the remainder of this document, resolving the forwarding address means resolving the forwarding resolution key together with its resolution context, when present.
         </t>
         <t>
         In some cases, operator may want to enforce that the forwarding address is resolved through a specific type of route.
@@ -324,10 +328,10 @@
                 The route resolvability check for the BGP NEXT_HOP MUST continue to be done.
             </li>
             <li>
-                In addition, the route resolvability criteria SHOULD be performed based on the forwarding address.
+                In addition, the route resolvability criteria SHOULD be evaluated using the path resolution tuple.
             </li>
             <li>
-                When resolving the forwarding address, look up SHOULD be performed by applying the resolution constraints defined in <xref target="lookup-in-table"/>.
+                When resolving the path resolution tuple, the forwarding resolution key SHOULD be looked up using its resolution context, when present, and the resolution constraints defined in <xref target="lookup-in-table"/>.
             </li>
         </ul>
         <t>
@@ -336,7 +340,7 @@
         </section>
         <section title="Internal cost determination">
         <t>
-        For a prefix P/m, different BGP paths may use different forwarding addresses and contexts of various types.
+        For a prefix P/m, different BGP paths may use different path resolution tuples.
         </t>
         <figure>
             <artwork><![CDATA[
@@ -348,7 +352,7 @@
             ]]></artwork>
         </figure>
         <t>
-        Costs retrieved from different types of forwarding addresses or contexts may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
+        Costs retrieved from different path resolution tuples may not be comparable because they are based on different sets of rules. For instance, path1 may leverage an SR policy (color 200, endpoint R1) optimizing for latency, so the cost of path1 will reflect the latency to R1. Path2 may use the IGP cost to R2. Path3 may have no cost. These values are not directly comparable.
         </t>
         <t>
         The issue of comparing costs of paths of various types is not new. In a regular IP routed network (without tunnels) that runs BGP, a prefix P/m may have paths with nexthops reachable through different IGPs or IGP route types, where costs computed by each IGP may use a different reference. While the routing table can tie-break across different protocols or route types for a single prefix using an internal preference (administrative distance) mechanism, this does not help when comparing BGP paths whose nexthops are resolved through different IGPs.
@@ -361,10 +365,10 @@
         </t>
         <ul>
             <li>
-            Remove from consideration any routes with an highest forwarding address preference value. This preference MAY be retrieved from the resolution lookup of the forwarding address or MAY be configured locally.
+            Remove from consideration any routes with an highest forwarding address preference value. This preference MAY be retrieved from resolution of the path resolution tuple or MAY be configured locally.
             </li>
             <li>
-            For remaining paths, the interior cost of a route is determined by the metric of the resolving route to the forwarding address applying the resolution constraints defined in <xref target="lookup-in-table"/>. If the forwarding address for a route is reachable, but no cost can be determined, the cost SHOULD be set by default to the maximum allowed cost.
+            For remaining paths, the interior cost of a route is determined by the metric returned by resolution of the path resolution tuple, applying the resolution constraints defined in <xref target="lookup-in-table"/>. If the forwarding resolution key for a route is reachable, but no cost can be determined, the cost SHOULD be set by default to the maximum allowed cost.
             </li>
         </ul>
         <t>
@@ -436,9 +440,9 @@
 
         </t>
         </section>
-        <section title="Next hop and forwarding address tracking" anchor="address-tracking">
+        <section title="Next hop and path resolution tracking" anchor="address-tracking">
         <t>
-        A BGP speaker SHOULD track the resolvability of both the NEXT_HOP and the forwarding address. If either the NEXT_HOP or the forwarding address becomes unresolvable or if the cost to reach either the NEXT_HOP or the forwarding address changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or forwarding address.
+        A BGP speaker SHOULD track the resolvability of both the NEXT_HOP and the path resolution tuple. If either becomes unresolvable, or if the cost returned for either resolution changes, the BGP speaker MUST re-evaluate the best path selection for all prefixes using the affected NEXT_HOP or path resolution tuple. Tracking MUST distinguish path resolution tuples containing the same forwarding resolution key but different resolution contexts, when such contexts are present.
         This tracking MUST be done for all paths, including the best path and non-best paths.
         </t>
         </section>
@@ -489,9 +493,9 @@
         </thead>
         <tbody>
         <tr><td>N1</td><td>IS-IS SR</td><td>110</td><td>10</td></tr>
-        <tr><td>N1</td><td>RSVP-TE</td><td>250</td><td>1000</td></tr>
+        <tr><td>N1</td><td>RSVP-TE</td><td>50</td><td>1000</td></tr>
         <tr><td>N2</td><td>IS-IS SR</td><td>110</td><td>15</td></tr>
-        <tr><td>N2</td><td>RSVP-TE</td><td>250</td><td>100</td></tr>
+        <tr><td>N2</td><td>RSVP-TE</td><td>50</td><td>100</td></tr>
         <tr><td>N3</td><td>IS-IS SR</td><td>110</td><td>20</td></tr>
         </tbody>
       </table>
@@ -506,11 +510,11 @@
   P/m
     Path1:
       from PE1, NH=N1
-      cost 1000, forwarding address preference 250
+      cost 1000, forwarding address preference 50
 
     Path2:
       from PE2, NH=N2
-      cost 100, forwarding address preference 250
+      cost 100, forwarding address preference 50
 
     Path3:
       from PE3, NH=NH3
@@ -519,7 +523,7 @@
       </artwork>
       </figure>
       <t>
-      PE4 will check the forwarding address preference of the paths. PE4 will not consider the paths received from PE3 because the forwarding address preference is lower than others.
+      PE4 will check the forwarding address preference of the paths. PE4 will not consider the path received from PE3 because its forwarding address preference is less preferred (a higher numerical value) than the others.
       Finally, PE4 will compare the internal costs between paths from PE1 and PE2 as they have the same preference and path from PE2 will be elected as best because it has the lowest cost.
       </t>
       <t>
@@ -708,7 +712,6 @@
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8174.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.8665.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9012.xml"/>
-        <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9246.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9252.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9256.xml"/>
         <xi:include href="https://bib.ietf.org/public/rfc/bibxml/reference.RFC.9350.xml"/>
