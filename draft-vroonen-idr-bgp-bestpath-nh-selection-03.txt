@@ -34,8 +34,9 @@ Abstract
    from this decoupling.  These problems include sub-optimal path
    selection, incorrect resolvability tracking of the forwarding path
    leading to traffic drop or misrouting, and others.  This document
-   proposes some modification of BGP path selection procedures to
-   accommodate these use cases.
+   specifies how BGP obtains resolvability, preference, metric, and
+   tracking information from resolution of the forwarding path and uses
+   those values as inputs to BGP path selection.
 
 Status of This Memo
 
@@ -46,7 +47,6 @@ Status of This Memo
    Task Force (IETF).  Note that other groups may also distribute
    working documents as Internet-Drafts.  The list of current Internet-
    Drafts is at https://datatracker.ietf.org/drafts/current/.
-
 
 
 
@@ -87,7 +87,7 @@ Table of Contents
      2.1.  Unicast over a BGP-free core  . . . . . . . . . . . . . .   4
      2.2.  Segment Routing Traffic Engineering Policy  . . . . . . .   5
      2.3.  SRv6 services . . . . . . . . . . . . . . . . . . . . . .   7
-   3.  Modification of the BGP route selection process . . . . . . .   8
+   3.  Path Resolution Inputs to BGP Route Selection . . . . . . . .   8
      3.1.  Path resolution tuple . . . . . . . . . . . . . . . . . .   8
      3.2.  Resolution constraints  . . . . . . . . . . . . . . . . .   9
      3.3.  Route resolvability condition . . . . . . . . . . . . . .  10
@@ -199,8 +199,11 @@ Internet-Draft        BGP nh selection enhancements            July 2026
       take into account that the cost associated with the SRv6 SID may
       be different from the cost associated with the BGP next-hop.
 
-   This document defines generic modifications to the BGP decision
-   process that can apply to all the use cases.
+   This document defines a generic model for deriving path resolution
+   inputs to BGP route selection for all these use cases.  BGP compares
+   candidate paths, while the route-resolution layer resolves the
+   applicable path resolution tuple and supplies the resulting
+   resolvability, preference, metric, and tracking state.
 
 1.1.  Requirements Language
 
@@ -213,9 +216,6 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 2.  Use cases
 
 2.1.  Unicast over a BGP-free core
-
-
-
 
 
 
@@ -403,7 +403,7 @@ Internet-Draft        BGP nh selection enhancements            July 2026
    of 2.  The cost to reach the SID must also be taken into account in
    this scenario to ensure that the traffic offload works properly.
 
-3.  Modification of the BGP route selection process
+3.  Path Resolution Inputs to BGP Route Selection
 
 3.1.  Path resolution tuple
 
@@ -569,10 +569,10 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
    This document updates [RFC4271] Section 9.1.2.2 e) as follows:
 
-   *  Remove from consideration any routes with an highest forwarding
-      address preference value.  This preference MAY be retrieved from
-      resolution of the path resolution tuple or MAY be configured
-      locally.
+   *  Remove from consideration all routes whose forwarding address
+      preference is not the lowest value among the candidate routes.
+      This preference MAY be retrieved from resolution of the path
+      resolution tuple or MAY be configured locally.
 
    *  For remaining paths, the interior cost of a route is determined by
       the metric returned by resolution of the path resolution tuple,
@@ -580,6 +580,13 @@ Internet-Draft        BGP nh selection enhancements            July 2026
       the forwarding resolution key for a route is reachable, but no
       cost can be determined, the cost SHOULD be set by default to the
       maximum allowed cost.
+
+   The resolvability, metric, and tracking state used for a BGP path
+   MUST refer to the same resolution of its path resolution tuple.  When
+   the forwarding address preference is retrieved from resolution, it
+   MUST refer to that same resolution.  An implementation MUST NOT
+   combine reachability from one resolution context with a metric from
+   another as if they described the same forwarding path.
 
    Using forwarding preference and forwarding address-based cost SHOULD
    be enabled through a configuration knob.
@@ -601,13 +608,6 @@ Internet-Draft        BGP nh selection enhancements            July 2026
                     preference 10 (from BGP), cost 14
 
                                 Figure 4
-
-
-
-
-
-
-
 
 
 
@@ -796,7 +796,7 @@ Internet-Draft        BGP nh selection enhancements            July 2026
          cost 100, forwarding address preference 50
 
        Path3:
-         from PE3, NH=NH3
+         from PE3, NH=N3
          cost 20, forwarding address preference 110
 
 
@@ -985,9 +985,10 @@ Internet-Draft        BGP nh selection enhancements            July 2026
    tunnel tail is not the service egress is not worse compared to using
    the NEXT_HOP.
 
-   This document defines mechanisms that modify the BGP best path
-   selection process defined in [RFC4271].  Consequently, the potential
-   impact on routing loops needs to be analyzed.
+   This document specifies path resolution inputs used by BGP route
+   selection, including resolvability, preference, and internal cost.
+   Consequently, the potential impact on routing loops needs to be
+   analyzed.
 
    The mechanisms described in this document are typically deployed in
    environments utilizing tunneling technologies (such as MPLS or SRv6).
@@ -1000,7 +1001,6 @@ Internet-Draft        BGP nh selection enhancements            July 2026
    selection criteria are enforced only at the ingress, preventing
    forwarding loops that might otherwise arise from inconsistent policy
    decisions on intermediate nodes.
-
 
 
 
@@ -1074,14 +1074,17 @@ Internet-Draft        BGP nh selection enhancements            July 2026
       MPLS-centric; this document is generic and applies to MPLS, SR
       Policy, SRv6 and intent-aware BGP transport.
 
-   *  This document introduces the forwarding address, decoupling path
-      selection from the NEXT_HOP.
+   *  This document introduces the path resolution tuple, comprising a
+      forwarding resolution key and an optional resolution context,
+      while continuing to require BGP NEXT_HOP resolvability.
 
    *  This document introduces the forwarding address preference to
-      compare paths of non-comparable types.
+      order BGP paths resolved through path resolution tuples whose
+      costs are not directly comparable.
 
-   *  This document derives the internal cost from the forwarding
-      address, not from the NEXT_HOP only.
+   *  This document derives the internal cost from resolution of the
+      path resolution tuple rather than solely from resolution of the
+      BGP NEXT_HOP.
 
    *  The MPLS case covered by
       [I-D.ietf-idr-bgp-bestpath-selection-criteria] is one instance of
@@ -1093,11 +1096,10 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 9.  Security Considerations
 
-   This document modifies BGP route selection process by using data
-   other than the next-hop address to perform the resolvability check as
-   well as to compute the internal cost.  This does not add any security
-   consideration compared to using the existing NEXT_HOP defined in
-   [RFC4271].
+   This document uses path resolution information other than the next-
+   hop address to provide resolvability and internal-cost inputs to BGP
+   route selection.  This does not add any security consideration
+   compared to using the existing NEXT_HOP defined in [RFC4271].
 
 10.  References
 
@@ -1112,8 +1114,6 @@ Internet-Draft        BGP nh selection enhancements            July 2026
               Border Gateway Protocol 4 (BGP-4)", RFC 4271,
               DOI 10.17487/RFC4271, January 2006,
               <https://www.rfc-editor.org/info/rfc4271>.
-
-
 
 
 

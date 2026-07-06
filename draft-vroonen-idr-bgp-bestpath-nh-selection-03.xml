@@ -68,7 +68,7 @@
       These technologies decouple the BGP control-plane's view of the next-hop from the data-plane's actual forwarding endpoint.
       This document describes the problems that arise from this decoupling.
       These problems include sub-optimal path selection, incorrect resolvability tracking of the forwarding path leading to traffic drop or misrouting, and others.
-      This document proposes some modification of BGP path selection procedures to accommodate these use cases.
+      This document specifies how BGP obtains resolvability, preference, metric, and tracking information from resolution of the forwarding path and uses those values as inputs to BGP path selection.
       </t>
     </abstract>
  
@@ -132,7 +132,7 @@
             </li>
         </ul>
         <t>
-        This document defines generic modifications to the BGP decision process that can apply to all the use cases.
+        This document defines a generic model for deriving path resolution inputs to BGP route selection for all these use cases. BGP compares candidate paths, while the route-resolution layer resolves the applicable path resolution tuple and supplies the resulting resolvability, preference, metric, and tracking state.
         </t>
       <section>
         <name>Requirements Language</name>
@@ -268,7 +268,7 @@
       </section>
     </section>
     
-    <section title="Modification of the BGP route selection process">
+    <section title="Path Resolution Inputs to BGP Route Selection">
         <section title="Path resolution tuple">
             <t>
             This document defines a path resolution tuple as a forwarding resolution key and, when required, a resolution context. The forwarding resolution key identifies the object resolved for a BGP path. For the mechanisms defined in this document, this key is an IP address, hereafter called the forwarding address. It may be the BGP NEXT_HOP or a different address signaled with the path, such as a Tunnel Egress Endpoint or an SRv6 Service SID.
@@ -365,12 +365,15 @@
         </t>
         <ul>
             <li>
-            Remove from consideration any routes with an highest forwarding address preference value. This preference MAY be retrieved from resolution of the path resolution tuple or MAY be configured locally.
+            Remove from consideration all routes whose forwarding address preference is not the lowest value among the candidate routes. This preference MAY be retrieved from resolution of the path resolution tuple or MAY be configured locally.
             </li>
             <li>
             For remaining paths, the interior cost of a route is determined by the metric returned by resolution of the path resolution tuple, applying the resolution constraints defined in <xref target="lookup-in-table"/>. If the forwarding resolution key for a route is reachable, but no cost can be determined, the cost SHOULD be set by default to the maximum allowed cost.
             </li>
         </ul>
+        <t>
+        The resolvability, metric, and tracking state used for a BGP path MUST refer to the same resolution of its path resolution tuple. When the forwarding address preference is retrieved from resolution, it MUST refer to that same resolution. An implementation MUST NOT combine reachability from one resolution context with a metric from another as if they described the same forwarding path.
+        </t>
         <t>
         Using forwarding preference and forwarding address-based cost SHOULD be enabled through a configuration knob.
         </t>
@@ -517,7 +520,7 @@
       cost 100, forwarding address preference 50
 
     Path3:
-      from PE3, NH=NH3
+      from PE3, NH=N3
       cost 20, forwarding address preference 110
 
       </artwork>
@@ -629,7 +632,7 @@
       When determining the internal cost using the forwarding address in these cases, the retrieved cost may not reflect the end-to-end path. However, using the NEXT_HOP address would not necessarily provide a better view: it would still give an inaccurate picture of distances from a traffic forwarding perspective, since the forwarding path does not follow the IGP-routed path. Additionally, operators commonly manipulate the NEXT_HOP through routing policies, so there is no guarantee that the NEXT_HOP address correctly reflects the real egress node. Hence, using the forwarding address in cases where the tunnel tail is not the service egress is not worse compared to using the NEXT_HOP.
       </t>
       <t>
-      This document defines mechanisms that modify the BGP best path selection process defined in <xref target="RFC4271"/>. Consequently, the potential impact on routing loops needs to be analyzed.
+      This document specifies path resolution inputs used by BGP route selection, including resolvability, preference, and internal cost. Consequently, the potential impact on routing loops needs to be analyzed.
       </t>
       <t>
       The mechanisms described in this document are typically deployed in environments utilizing tunneling technologies (such as MPLS or SRv6). In these scenarios, the BGP path selection determines the specific Forwarding Address used for encapsulation.
@@ -680,9 +683,9 @@
       <ul>
         <li>Scope: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> performs the resolvability check only; this document also covers internal cost determination and path preference.</li>
         <li>Generality: <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is MPLS-centric; this document is generic and applies to MPLS, SR Policy, SRv6 and intent-aware BGP transport.</li>
-        <li>This document introduces the forwarding address, decoupling path selection from the NEXT_HOP.</li>
-        <li>This document introduces the forwarding address preference to compare paths of non-comparable types.</li>
-        <li>This document derives the internal cost from the forwarding address, not from the NEXT_HOP only.</li>
+        <li>This document introduces the path resolution tuple, comprising a forwarding resolution key and an optional resolution context, while continuing to require BGP NEXT_HOP resolvability.</li>
+        <li>This document introduces the forwarding address preference to order BGP paths resolved through path resolution tuples whose costs are not directly comparable.</li>
+        <li>This document derives the internal cost from resolution of the path resolution tuple rather than solely from resolution of the BGP NEXT_HOP.</li>
         <li>The MPLS case covered by <xref target="I-D.ietf-idr-bgp-bestpath-selection-criteria"/> is one instance of the generic mechanism defined here.</li>
       </ul>
     </section>
@@ -695,7 +698,7 @@
     <section anchor="Security">
       <name>Security Considerations</name>
       <t>
-      This document modifies BGP route selection process by using data other than the next-hop address to perform the resolvability check as well as to compute the internal cost. 
+      This document uses path resolution information other than the next-hop address to provide resolvability and internal-cost inputs to BGP route selection.
       This does not add any security consideration compared to using the existing NEXT_HOP defined in <xref target="RFC4271"/>.
       </t>
     </section>
