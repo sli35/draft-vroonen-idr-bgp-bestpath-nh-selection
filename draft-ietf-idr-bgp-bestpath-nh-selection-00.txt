@@ -2,20 +2,15 @@
 
 
 
-Interdomain Working Group                                O. Vroonen, Ed.
-Internet-Draft                                              S. Litkowski
-Updates: 4271 (if approved)                                        Cisco
-Intended status: Standards Track                               K. Chandi
-Expires: 7 January 2027                                      Bell Canada
-                                                                 J. Dong
-                                                                  Huawei
-                                                                I. Means
-                                                                    AT&T
-                                                             6 July 2026
+Inter-Domain Routing                                     O. Vroonen, Ed.
+Internet-Draft                                                     Cisco
+Updates: 4271 (if approved)                                 J. Dong, Ed.
+Intended status: Standards Track                                  Huawei
+Expires: 28 March 2027                                 24 September 2026
 
 
              BGP best path next-hop selection enhancements
-             draft-vroonen-idr-bgp-bestpath-nh-selection-03
+              draft-ietf-idr-bgp-bestpath-nh-selection-00
 
 Abstract
 
@@ -50,20 +45,20 @@ Status of This Memo
    working documents as Internet-Drafts.  The list of current Internet-
    Drafts is at https://datatracker.ietf.org/drafts/current/.
 
-
-
-
-Vroonen, et al.          Expires 7 January 2027                 [Page 1]
-
-Internet-Draft        BGP nh selection enhancements            July 2026
-
-
    Internet-Drafts are draft documents valid for a maximum of six months
    and may be updated, replaced, or obsoleted by other documents at any
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 7 January 2027.
+
+
+
+Vroonen & Dong            Expires 28 March 2027                 [Page 1]
+
+Internet-Draft        BGP nh selection enhancements       September 2026
+
+
+   This Internet-Draft will expire on 28 March 2027.
 
 Copyright Notice
 
@@ -103,15 +98,20 @@ Table of Contents
    10. References  . . . . . . . . . . . . . . . . . . . . . . . . .  20
      10.1.  Normative References . . . . . . . . . . . . . . . . . .  20
      10.2.  Informative References . . . . . . . . . . . . . . . . .  22
-   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  22
-   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  22
+   Contributors  . . . . . . . . . . . . . . . . . . . . . . . . . .  22
+   Acknowledgements  . . . . . . . . . . . . . . . . . . . . . . . .  23
+   Authors' Addresses  . . . . . . . . . . . . . . . . . . . . . . .  23
 
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 2]
+
+
+
+
+Vroonen & Dong            Expires 28 March 2027                 [Page 2]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
 1.  Introduction
@@ -165,9 +165,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 3]
+Vroonen & Dong            Expires 28 March 2027                 [Page 3]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    This document describes cases where the NEXT_HOP used in the BGP
@@ -221,9 +221,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 4]
+Vroonen & Dong            Expires 28 March 2027                 [Page 4]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
                      [D=6]         [D=6]
@@ -277,9 +277,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 5]
+Vroonen & Dong            Expires 28 March 2027                 [Page 5]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    If PE3 performs next-hop resolution based solely on the BGP NEXT_HOP,
@@ -333,9 +333,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 6]
+Vroonen & Dong            Expires 28 March 2027                 [Page 6]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
 2.3.  SRv6 services
@@ -389,9 +389,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 7]
+Vroonen & Dong            Expires 28 March 2027                 [Page 7]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    The problem of path suboptimality may also happen with algorithm 0,
@@ -445,9 +445,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 8]
+Vroonen & Dong            Expires 28 March 2027                 [Page 8]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    Two path resolution tuples containing the same resolution key but
@@ -501,9 +501,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                 [Page 9]
+Vroonen & Dong            Expires 28 March 2027                 [Page 9]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
 3.3.  Route resolvability condition
@@ -557,9 +557,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 10]
+Vroonen & Dong            Expires 28 March 2027                [Page 10]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    In order to compare the paths, this document introduces the concept
@@ -613,9 +613,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 11]
+Vroonen & Dong            Expires 28 March 2027                [Page 11]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
      +===============+============+========+========================+
@@ -669,9 +669,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 12]
+Vroonen & Dong            Expires 28 March 2027                [Page 12]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
       +==========================+==================================+
@@ -725,9 +725,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 13]
+Vroonen & Dong            Expires 28 March 2027                [Page 13]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    In Figure 5, a prefix P/m is reachable by PE4 from PE1, PE2, PE3
@@ -781,9 +781,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 14]
+Vroonen & Dong            Expires 28 March 2027                [Page 14]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
      P/m
@@ -837,9 +837,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 15]
+Vroonen & Dong            Expires 28 March 2027                [Page 15]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    In Figure 7, PE3 receives a VPN prefix P/m from PE1 and PE2 with
@@ -893,9 +893,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 16]
+Vroonen & Dong            Expires 28 March 2027                [Page 16]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
                  +========+==========+============+======+
@@ -949,9 +949,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 17]
+Vroonen & Dong            Expires 28 March 2027                [Page 17]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
 6.  Operational Considerations
@@ -1005,9 +1005,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 18]
+Vroonen & Dong            Expires 28 March 2027                [Page 18]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    When the traffic is encapsulated at the ingress router, intermediate
@@ -1061,9 +1061,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 19]
+Vroonen & Dong            Expires 28 March 2027                [Page 19]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    Nevertheless, to ensure predictable routing behavior and simplify
@@ -1117,9 +1117,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 20]
+Vroonen & Dong            Expires 28 March 2027                [Page 20]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
@@ -1173,9 +1173,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-Vroonen, et al.          Expires 7 January 2027                [Page 21]
+Vroonen & Dong            Expires 28 March 2027                [Page 21]
 
-Internet-Draft        BGP nh selection enhancements            July 2026
+Internet-Draft        BGP nh selection enhancements       September 2026
 
 
    [RFC9832]  Vairavakkalai, K., Ed. and N. Venkataraman, Ed., "BGP
@@ -1188,9 +1188,9 @@ Internet-Draft        BGP nh selection enhancements            July 2026
    [I-D.ietf-idr-bgp-bestpath-selection-criteria]
               Asati, R., "BGP Bestpath Selection Criteria Enhancement",
               Work in Progress, Internet-Draft, draft-ietf-idr-bgp-
-              bestpath-selection-criteria-12, 5 June 2019,
+              bestpath-selection-criteria-13, 14 September 2026,
               <https://datatracker.ietf.org/doc/html/draft-ietf-idr-bgp-
-              bestpath-selection-criteria-12>.
+              bestpath-selection-criteria-13>.
 
    [I-D.ietf-idr-sr-policy-metric]
               Li, Z., KaZhang, Dong, J., Talaulikar, K., and R. Gu, "BGP
@@ -1208,6 +1208,32 @@ Internet-Draft        BGP nh selection enhancements            July 2026
               (CAR)", RFC 9871, DOI 10.17487/RFC9871, November 2025,
               <https://www.rfc-editor.org/info/rfc9871>.
 
+Contributors
+
+   The following people contributed substantially to the content of this
+   document and should be considered co-authors.
+
+   Stephane Litkowski
+   Cisco
+   Email: slitkows@cisco.com
+
+
+   Kandhla Chandi
+   Bell Canada
+   Email: kandhla.chandi@bell.ca
+
+
+   Israel Means
+   AT&T
+   Email: israel.means@att.com
+
+
+
+Vroonen & Dong            Expires 28 March 2027                [Page 22]
+
+Internet-Draft        BGP nh selection enhancements       September 2026
+
+
 Acknowledgements
 
    The authors would like to acknowledge Ketan Talaulikar, Serge Krier
@@ -1220,33 +1246,11 @@ Authors' Addresses
    Email: ovroonen@cisco.com
 
 
-   Stephane Litkowski
-   Cisco
-   Email: slitkows@cisco.com
-
-
-
-
-
-
-Vroonen, et al.          Expires 7 January 2027                [Page 22]
-
-Internet-Draft        BGP nh selection enhancements            July 2026
-
-
-   Kandhla Chandi
-   Bell Canada
-   Email: kandhla.chandi@bell.ca
-
-
-   Jie Dong
+   Jie Dong (editor)
    Huawei
    Email: jie.dong@huawei.com
 
 
-   Israel Means
-   AT&T
-   Email: israel.means@att.com
 
 
 
@@ -1281,8 +1285,4 @@ Internet-Draft        BGP nh selection enhancements            July 2026
 
 
 
-
-
-
-
-Vroonen, et al.          Expires 7 January 2027                [Page 23]
+Vroonen & Dong            Expires 28 March 2027                [Page 23]

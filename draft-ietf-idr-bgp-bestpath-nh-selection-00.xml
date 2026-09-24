@@ -13,7 +13,7 @@
 <rfc
   xmlns:xi="http://www.w3.org/2001/XInclude"
   category="std"
-  docName="draft-vroonen-idr-bgp-bestpath-nh-selection-03"
+  docName="draft-ietf-idr-bgp-bestpath-nh-selection-00"
   ipr="trust200902"
   obsoletes=""
   updates="4271"
@@ -24,7 +24,7 @@
   <front>
     <title abbrev="BGP nh selection enhancements">BGP best path next-hop selection enhancements</title>
 
-    <seriesInfo name="Internet-Draft" value="draft-vroonen-idr-bgp-bestpath-nh-selection-03"/>
+    <seriesInfo name="Internet-Draft" value="draft-ietf-idr-bgp-bestpath-nh-selection-00"/>
 
     <author fullname="Olivier Vroonen" initials="O." role="editor" surname="Vroonen">
       <organization>Cisco</organization>
@@ -32,35 +32,17 @@
         <email>ovroonen@cisco.com</email>
       </address>
     </author>
-    <author fullname="Stephane Litkowski" initials="S." surname="Litkowski">
-      <organization>Cisco</organization>
-      <address>
-        <email>slitkows@cisco.com</email>
-      </address>
-    </author>
-    <author fullname="Kandhla Chandi" initials="K." surname="Chandi">
-      <organization>Bell Canada</organization>
-      <address>
-        <email>kandhla.chandi@bell.ca</email>
-      </address>
-    </author>
-    <author fullname="Jie Dong" initials="J." surname="Dong">
+    <author fullname="Jie Dong" initials="J." role="editor" surname="Dong">
       <organization>Huawei</organization>
       <address>
         <email>jie.dong@huawei.com</email>
-      </address>
-    </author>
-    <author fullname="Israel Means" initials="I." surname="Means">
-      <organization>AT&amp;T</organization>
-      <address>
-        <email>israel.means@att.com</email>
       </address>
     </author>
     <date year="2026"/>
 
 
     <area>Routing</area>
-    <workgroup>Interdomain Working Group</workgroup>
+    <workgroup>Inter-Domain Routing</workgroup>
 
 
     <abstract>
@@ -734,6 +716,31 @@
 
       </references>
     </references>
+
+    <section anchor="Contributors" numbered="false">
+      <name>Contributors</name>
+      <t>
+      The following people contributed substantially to the content of this document and should be considered co-authors.
+      </t>
+      <contact fullname="Stephane Litkowski" initials="S." surname="Litkowski">
+        <organization>Cisco</organization>
+        <address>
+          <email>slitkows@cisco.com</email>
+        </address>
+      </contact>
+      <contact fullname="Kandhla Chandi" initials="K." surname="Chandi">
+        <organization>Bell Canada</organization>
+        <address>
+          <email>kandhla.chandi@bell.ca</email>
+        </address>
+      </contact>
+      <contact fullname="Israel Means" initials="I." surname="Means">
+        <organization>AT&amp;T</organization>
+        <address>
+          <email>israel.means@att.com</email>
+        </address>
+      </contact>
+    </section>
 
     <section anchor="Acknowledgements" numbered="false">
       <name>Acknowledgements</name>
